@@ -1,3 +1,5 @@
+version: 2
+
 project_name: gsuite
 
 before:
@@ -20,11 +22,13 @@ builds:
       - -s -w -X github.com/khang/google-suite-cli/cmd.Version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    format_overrides:
+    formats_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 checksum:
   name_template: "checksums.txt"
