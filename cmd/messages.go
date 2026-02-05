@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/khang/google-suite-cli/internal/auth"
@@ -20,7 +21,18 @@ var (
 	// messagesModifyCmd flags
 	addLabels    string
 	removeLabels string
+
+	// messagesGetAttachmentCmd flags
+	attachmentOutput string
 )
+
+// attachmentInfo holds information about a message attachment.
+type attachmentInfo struct {
+	Filename     string
+	MimeType     string
+	Size         int64
+	AttachmentId string
+}
 
 // messagesCmd represents the messages command group
 var messagesCmd = &cobra.Command{
@@ -96,11 +108,33 @@ Labels can be system labels (INBOX, UNREAD, STARRED, etc.) or user-created label
 	RunE: runMessagesModify,
 }
 
+// messagesGetAttachmentCmd represents the messages get-attachment command
+var messagesGetAttachmentCmd = &cobra.Command{
+	Use:   "get-attachment <message-id> <attachment-id>",
+	Short: "Download an attachment from a message",
+	Long: `Download a specific attachment from a Gmail message.
+
+Requires the message ID and the attachment ID. The attachment ID can be found
+by viewing the message with 'messages get', which displays attachment details
+including their IDs.
+
+By default, the file is saved with its original filename. Use --output to
+specify a custom output path.`,
+	Example: `  # Download an attachment (uses original filename)
+  gsuite messages get-attachment 18d5a1b2c3d4e5f6 ANGjdJ8abc123
+
+  # Download to a specific file
+  gsuite messages get-attachment 18d5a1b2c3d4e5f6 ANGjdJ8abc123 --output ./downloads/report.pdf`,
+	Args: cobra.ExactArgs(2),
+	RunE: runMessagesGetAttachment,
+}
+
 func init() {
 	rootCmd.AddCommand(messagesCmd)
 	messagesCmd.AddCommand(messagesListCmd)
 	messagesCmd.AddCommand(messagesGetCmd)
 	messagesCmd.AddCommand(messagesModifyCmd)
+	messagesCmd.AddCommand(messagesGetAttachmentCmd)
 
 	// messagesListCmd flags
 	messagesListCmd.Flags().Int64VarP(&maxResults, "max-results", "n", 10, "Maximum number of messages to return (max 500)")
@@ -110,6 +144,9 @@ func init() {
 	// messagesModifyCmd flags
 	messagesModifyCmd.Flags().StringVar(&addLabels, "add-labels", "", "Comma-separated label IDs to add (e.g., STARRED,Label_123)")
 	messagesModifyCmd.Flags().StringVar(&removeLabels, "remove-labels", "", "Comma-separated label IDs to remove (e.g., UNREAD,INBOX)")
+
+	// messagesGetAttachmentCmd flags
+	messagesGetAttachmentCmd.Flags().StringVarP(&attachmentOutput, "output", "o", "", "Output file path (defaults to attachment filename)")
 }
 
 func runMessagesList(cmd *cobra.Command, args []string) error {
@@ -263,6 +300,15 @@ func runMessagesGet(cmd *cobra.Command, args []string) error {
 		fmt.Printf("(Snippet) %s\n", msg.Snippet)
 	}
 
+	// Display attachment info if present
+	attachments := findAttachments(msg.Payload.Parts)
+	if len(attachments) > 0 {
+		fmt.Println("---")
+		for _, att := range attachments {
+			fmt.Printf("Attachment: %s (%s, %d bytes, ID: %s)\n", att.Filename, att.MimeType, att.Size, att.AttachmentId)
+		}
+	}
+
 	return nil
 }
 
@@ -392,5 +438,103 @@ func runMessagesModify(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Labels removed: %s\n", strings.Join(removeLabelsList, ", "))
 	}
 
+	return nil
+}
+
+// findAttachments recursively searches through MIME parts and returns info about parts
+// that have a non-empty Filename (i.e., actual file attachments).
+func findAttachments(parts []*gmail.MessagePart) []attachmentInfo {
+	var attachments []attachmentInfo
+	for _, part := range parts {
+		if part.Filename != "" && part.Body != nil {
+			attachments = append(attachments, attachmentInfo{
+				Filename:     part.Filename,
+				MimeType:     part.MimeType,
+				Size:         part.Body.Size,
+				AttachmentId: part.Body.AttachmentId,
+			})
+		}
+		// Recurse into nested parts
+		if len(part.Parts) > 0 {
+			attachments = append(attachments, findAttachments(part.Parts)...)
+		}
+	}
+	return attachments
+}
+
+func runMessagesGetAttachment(cmd *cobra.Command, args []string) error {
+	messageID := args[0]
+	attachmentID := args[1]
+
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Get the attachment data
+	att, err := service.Users.Messages.Attachments.Get("me", messageID, attachmentID).Do()
+	if err != nil {
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// Decode the attachment data (base64url encoded)
+	decoded, err := base64.URLEncoding.DecodeString(att.Data)
+	if err != nil {
+		// Try without padding (RawURLEncoding)
+		decoded, err = base64.RawURLEncoding.DecodeString(att.Data)
+		if err != nil {
+			return fmt.Errorf("failed to decode attachment data: %w", err)
+		}
+	}
+
+	// Determine output filename
+	outputPath := attachmentOutput
+	if outputPath == "" {
+		// Get the filename from the message metadata
+		msg, err := service.Users.Messages.Get("me", messageID).Format("full").Do()
+		if err == nil {
+			attachments := findAttachments(msg.Payload.Parts)
+			for _, a := range attachments {
+				if a.AttachmentId == attachmentID {
+					outputPath = a.Filename
+					break
+				}
+			}
+		}
+		// Fallback if filename not found
+		if outputPath == "" {
+			outputPath = fmt.Sprintf("attachment_%s", attachmentID)
+		}
+	}
+
+	// Write the attachment to file
+	err = os.WriteFile(outputPath, decoded, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write attachment file: %w", err)
+	}
+
+	fmt.Printf("Attachment saved: %s (%d bytes)\n", outputPath, len(decoded))
 	return nil
 }
