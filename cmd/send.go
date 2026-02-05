@@ -1,9 +1,15 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/khang/google-suite-cli/internal/auth"
@@ -18,6 +24,7 @@ var (
 	sendBody    string
 	sendCc      string
 	sendBcc     string
+	sendAttach  []string
 )
 
 // sendCmd represents the send command
@@ -27,7 +34,7 @@ var sendCmd = &cobra.Command{
 	Long: `Send a plain text email message via Gmail.
 
 Composes and sends an email with the specified recipient, subject, and body.
-Optionally include CC and BCC recipients.`,
+Optionally include CC and BCC recipients. Supports file attachments via --attach.`,
 	Example: `  # Send a simple email
   gsuite send --to "recipient@example.com" --subject "Hello" --body "Message content"
 
@@ -38,7 +45,10 @@ Optionally include CC and BCC recipients.`,
   gsuite send -t "recipient@example.com" -s "Meeting" -b "See you there" --cc "cc@example.com" --bcc "bcc@example.com"
 
   # Send to multiple CC recipients
-  gsuite send -t "main@example.com" -s "Update" -b "Content" --cc "one@example.com,two@example.com"`,
+  gsuite send -t "main@example.com" -s "Update" -b "Content" --cc "one@example.com,two@example.com"
+
+  # Send with file attachments
+  gsuite send -t "user@domain.com" -s "Report" -b "See attached." --attach report.pdf --attach data.csv`,
 	RunE: runSend,
 }
 
@@ -58,6 +68,7 @@ func init() {
 	// Optional flags
 	sendCmd.Flags().StringVar(&sendCc, "cc", "", "CC recipients (comma-separated)")
 	sendCmd.Flags().StringVar(&sendBcc, "bcc", "", "BCC recipients (comma-separated)")
+	sendCmd.Flags().StringArrayVarP(&sendAttach, "attach", "a", nil, "File path to attach (can be specified multiple times)")
 }
 
 func runSend(cmd *cobra.Command, args []string) error {
@@ -88,11 +99,26 @@ func runSend(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	// Build RFC 2822 formatted message
-	message := buildSendRFC2822Message(sendTo, sendSubject, sendBody, sendCc, sendBcc)
+	// Validate attachment files exist before building message
+	for _, attachPath := range sendAttach {
+		if _, err := os.Stat(attachPath); err != nil {
+			return fmt.Errorf("attachment file not found: %s", attachPath)
+		}
+	}
 
-	// Base64url encode the message
-	encodedMessage := base64.URLEncoding.EncodeToString([]byte(message))
+	var encodedMessage string
+	if len(sendAttach) > 0 {
+		// Build MIME multipart message with attachments
+		mimeMessage, err := buildMultipartMessage(sendTo, sendSubject, sendBody, sendCc, sendBcc, sendAttach)
+		if err != nil {
+			return fmt.Errorf("failed to build message with attachments: %w", err)
+		}
+		encodedMessage = base64.URLEncoding.EncodeToString(mimeMessage)
+	} else {
+		// Build simple RFC 2822 formatted message (no attachments)
+		message := buildSendRFC2822Message(sendTo, sendSubject, sendBody, sendCc, sendBcc)
+		encodedMessage = base64.URLEncoding.EncodeToString([]byte(message))
+	}
 
 	// Create the Gmail message object
 	gmailMessage := &gmail.Message{
@@ -134,4 +160,89 @@ func buildSendRFC2822Message(to, subject, body, cc, bcc string) string {
 	builder.WriteString(body)
 
 	return builder.String()
+}
+
+// buildMultipartMessage constructs a MIME multipart message with file attachments.
+func buildMultipartMessage(to, subject, body, cc, bcc string, attachPaths []string) ([]byte, error) {
+	var buf bytes.Buffer
+
+	// Create multipart writer
+	writer := multipart.NewWriter(&buf)
+
+	// Write top-level headers
+	buf.Reset() // Reset to write headers before multipart content
+	var headerBuf bytes.Buffer
+	headerBuf.WriteString(fmt.Sprintf("To: %s\r\n", to))
+	if cc != "" {
+		headerBuf.WriteString(fmt.Sprintf("Cc: %s\r\n", cc))
+	}
+	if bcc != "" {
+		headerBuf.WriteString(fmt.Sprintf("Bcc: %s\r\n", bcc))
+	}
+	headerBuf.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	headerBuf.WriteString("MIME-Version: 1.0\r\n")
+	headerBuf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n", writer.Boundary()))
+	headerBuf.WriteString("\r\n")
+
+	// Write the text body part
+	textHeader := make(textproto.MIMEHeader)
+	textHeader.Set("Content-Type", "text/plain; charset=UTF-8")
+	textPart, err := writer.CreatePart(textHeader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text part: %w", err)
+	}
+	if _, err := textPart.Write([]byte(body)); err != nil {
+		return nil, fmt.Errorf("failed to write body: %w", err)
+	}
+
+	// Write attachment parts
+	for _, attachPath := range attachPaths {
+		fileData, err := os.ReadFile(attachPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read attachment %s: %w", attachPath, err)
+		}
+
+		// Detect MIME type from file content
+		sniffLen := 512
+		if len(fileData) < sniffLen {
+			sniffLen = len(fileData)
+		}
+		mimeType := http.DetectContentType(fileData[:sniffLen])
+
+		// Create attachment part
+		basename := filepath.Base(attachPath)
+		attachHeader := make(textproto.MIMEHeader)
+		attachHeader.Set("Content-Type", mimeType)
+		attachHeader.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", basename))
+		attachHeader.Set("Content-Transfer-Encoding", "base64")
+
+		attachPart, err := writer.CreatePart(attachHeader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create attachment part: %w", err)
+		}
+
+		// Base64 encode and write with line wrapping at 76 chars
+		encoded := base64.StdEncoding.EncodeToString(fileData)
+		for i := 0; i < len(encoded); i += 76 {
+			end := i + 76
+			if end > len(encoded) {
+				end = len(encoded)
+			}
+			if _, err := attachPart.Write([]byte(encoded[i:end] + "\r\n")); err != nil {
+				return nil, fmt.Errorf("failed to write attachment data: %w", err)
+			}
+		}
+	}
+
+	// Close the multipart writer
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	// Combine headers and multipart body
+	var result bytes.Buffer
+	result.Write(headerBuf.Bytes())
+	result.Write(buf.Bytes())
+
+	return result.Bytes(), nil
 }
