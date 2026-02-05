@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** Planning next milestone
+**Current focus:** v1.1 OAuth2 Support
 
 ## Current Position
 
-Phase: All v1.0 phases complete (4 of 4)
-Plan: N/A — milestone shipped
-Status: Ready to plan next milestone
-Last activity: 2026-02-05 — v1.0 milestone archived
+Phase: 5 of 7 (OAuth2 Core)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-05 - Milestone v1.1 created
 
-Progress: ██████████ 100% (11/11 plans) — v1.0 SHIPPED
+Progress: ░░░░░░░░░░ 0%
 
 ## Performance Metrics
 
@@ -46,8 +46,12 @@ None.
 
 None.
 
+### Roadmap Evolution
+
+- Milestone v1.1 created: OAuth2 browser-based login for personal Gmail, 3 phases (Phase 5-7)
+
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: v1.0 milestone archived
+Stopped at: Milestone v1.1 initialization
 Resume file: None

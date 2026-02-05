@@ -11,6 +11,7 @@ None
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
+- 🚧 **v1.1 OAuth2 Support** — Phases 5-7 (in progress)
 
 ## Completed Milestones
 
@@ -28,6 +29,40 @@ None
 
 </details>
 
+### 🚧 v1.1 OAuth2 Support (In Progress)
+
+**Milestone Goal:** Add OAuth2 browser-based login flow for personal Gmail accounts alongside existing service account auth
+
+#### Phase 5: OAuth2 Core
+
+**Goal**: Implement token storage, browser opener, and OAuth2 authorization code flow with PKCE
+**Depends on**: v1.0 complete
+**Research**: Unlikely (Go stdlib oauth2 already in project)
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD (run /gsd:plan-phase 5 to break down)
+
+#### Phase 6: Auth Dispatcher
+
+**Goal**: Refactor auth.go to auto-detect credential type from JSON and branch between service account / OAuth flows
+**Depends on**: Phase 5
+**Research**: Unlikely (internal refactor)
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: TBD (run /gsd:plan-phase 6 to break down)
+
+#### Phase 7: CLI Integration
+
+**Goal**: Add `login` command, remove `--user` guards from 7 command files, update help text
+**Depends on**: Phase 6
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: TBD (run /gsd:plan-phase 7 to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -36,3 +71,6 @@ None
 | 2. Core Read Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 3. Write Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Polish | v1.0 | 2/2 | Complete | 2026-02-05 |
+| 5. OAuth2 Core | v1.1 | 0/? | Not started | - |
+| 6. Auth Dispatcher | v1.1 | 0/? | Not started | - |
+| 7. CLI Integration | v1.1 | 0/? | Not started | - |
