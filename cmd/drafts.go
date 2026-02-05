@@ -215,11 +215,52 @@ func runDraftsList(cmd *cobra.Command, args []string) error {
 
 	// Check if no drafts found
 	if len(resp.Drafts) == 0 {
+		if GetOutputFormat() == "json" {
+			return outputJSON([]struct{}{})
+		}
 		fmt.Println("No drafts found.")
 		return nil
 	}
 
-	// Print results
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftListItem struct {
+			DraftID   string `json:"draft_id"`
+			MessageID string `json:"message_id"`
+			Subject   string `json:"subject"`
+			Snippet   string `json:"snippet"`
+		}
+		var results []draftListItem
+		for _, draft := range resp.Drafts {
+			detail, err := service.Users.Drafts.Get("me", draft.Id).Format("metadata").Do()
+			if err != nil {
+				results = append(results, draftListItem{DraftID: draft.Id})
+				continue
+			}
+			var subject, snippet, messageID string
+			if detail.Message != nil && detail.Message.Payload != nil {
+				for _, header := range detail.Message.Payload.Headers {
+					if header.Name == "Subject" {
+						subject = header.Value
+						break
+					}
+				}
+			}
+			if detail.Message != nil {
+				snippet = detail.Message.Snippet
+				messageID = detail.Message.Id
+			}
+			results = append(results, draftListItem{
+				DraftID:   draft.Id,
+				MessageID: messageID,
+				Subject:   subject,
+				Snippet:   snippet,
+			})
+		}
+		return outputJSON(results)
+	}
+
+	// Print results (text mode)
 	fmt.Printf("Drafts (%d):\n\n", len(resp.Drafts))
 	for _, draft := range resp.Drafts {
 		// Get draft details
@@ -322,15 +363,39 @@ func runDraftsGet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Print headers
+	// Extract body content
+	body := extractDraftBody(draft.Message)
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftGetResult struct {
+			DraftID string `json:"draft_id"`
+			To      string `json:"to"`
+			Subject string `json:"subject"`
+			Date    string `json:"date"`
+			Body    string `json:"body"`
+		}
+		bodyText := body
+		if bodyText == "" {
+			bodyText = draft.Message.Snippet
+		}
+		return outputJSON(draftGetResult{
+			DraftID: draftID,
+			To:      to,
+			Subject: subject,
+			Date:    date,
+			Body:    bodyText,
+		})
+	}
+
+	// Print headers (text mode)
 	fmt.Printf("Draft ID: %s\n", draftID)
 	fmt.Printf("To: %s\n", to)
 	fmt.Printf("Subject: %s\n", subject)
 	fmt.Printf("Date: %s\n", date)
 	fmt.Println("---")
 
-	// Extract body content (reuse pattern from messages.go)
-	body := extractDraftBody(draft.Message)
+	// Print body content
 	if body != "" {
 		fmt.Println(body)
 	} else {
@@ -430,6 +495,22 @@ func runDraftsCreate(cmd *cobra.Command, args []string) error {
 	created, err := service.Users.Drafts.Create("me", draft).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftCreateResult struct {
+			DraftID   string `json:"draft_id"`
+			MessageID string `json:"message_id"`
+		}
+		msgID := ""
+		if created.Message != nil {
+			msgID = created.Message.Id
+		}
+		return outputJSON(draftCreateResult{
+			DraftID:   created.Id,
+			MessageID: msgID,
+		})
 	}
 
 	fmt.Printf("Draft created: %s\n", created.Id)
@@ -532,9 +613,25 @@ func runDraftsUpdate(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	_, err = service.Users.Drafts.Update("me", draftID, draft).Do()
+	updated, err := service.Users.Drafts.Update("me", draftID, draft).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftUpdateResult struct {
+			DraftID   string `json:"draft_id"`
+			MessageID string `json:"message_id"`
+		}
+		msgID := ""
+		if updated.Message != nil {
+			msgID = updated.Message.Id
+		}
+		return outputJSON(draftUpdateResult{
+			DraftID:   updated.Id,
+			MessageID: msgID,
+		})
 	}
 
 	fmt.Printf("Draft updated: %s\n", draftID)
@@ -581,6 +678,16 @@ func runDraftsSend(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gmail API error: %w", err)
 	}
 
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftSendResult struct {
+			MessageID string `json:"message_id"`
+		}
+		return outputJSON(draftSendResult{
+			MessageID: sent.Id,
+		})
+	}
+
 	fmt.Printf("Draft sent as message: %s\n", sent.Id)
 	return nil
 }
@@ -619,6 +726,18 @@ func runDraftsDelete(cmd *cobra.Command, args []string) error {
 	err = service.Users.Drafts.Delete("me", draftID).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type draftDeleteResult struct {
+			DraftID string `json:"draft_id"`
+			Deleted bool   `json:"deleted"`
+		}
+		return outputJSON(draftDeleteResult{
+			DraftID: draftID,
+			Deleted: true,
+		})
 	}
 
 	fmt.Printf("Draft deleted: %s\n", draftID)

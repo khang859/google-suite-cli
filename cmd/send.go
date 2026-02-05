@@ -131,6 +131,16 @@ func runSend(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type sendResult struct {
+			MessageID string `json:"message_id"`
+		}
+		return outputJSON(sendResult{
+			MessageID: sent.Id,
+		})
+	}
+
 	fmt.Printf("Message sent successfully!\nMessage ID: %s\n", sent.Id)
 	return nil
 }

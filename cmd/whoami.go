@@ -61,7 +61,21 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gmail API error: %w", err)
 	}
 
-	// Print profile information
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type whoamiResult struct {
+			Email         string `json:"email"`
+			MessagesTotal int64  `json:"messages_total"`
+			ThreadsTotal  int64  `json:"threads_total"`
+		}
+		return outputJSON(whoamiResult{
+			Email:         profile.EmailAddress,
+			MessagesTotal: profile.MessagesTotal,
+			ThreadsTotal:  profile.ThreadsTotal,
+		})
+	}
+
+	// Print profile information (text mode)
 	fmt.Printf("Email: %s\n", profile.EmailAddress)
 	fmt.Printf("Messages Total: %d\n", profile.MessagesTotal)
 	fmt.Printf("Threads Total: %d\n", profile.ThreadsTotal)

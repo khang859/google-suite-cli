@@ -193,7 +193,27 @@ func runLabelsList(cmd *cobra.Command, args []string) error {
 		return userLabels[i].Name < userLabels[j].Name
 	})
 
-	// Print header
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type labelItem struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+			Type string `json:"type"`
+		}
+		var results []labelItem
+		for _, label := range systemLabels {
+			results = append(results, labelItem{ID: label.Id, Name: label.Name, Type: label.Type})
+		}
+		for _, label := range userLabels {
+			results = append(results, labelItem{ID: label.Id, Name: label.Name, Type: label.Type})
+		}
+		if results == nil {
+			results = []labelItem{}
+		}
+		return outputJSON(results)
+	}
+
+	// Print header (text mode)
 	fmt.Printf("%-30s %-40s %s\n", "NAME", "ID", "TYPE")
 	fmt.Printf("%-30s %-40s %s\n", "----", "--", "----")
 
@@ -263,6 +283,22 @@ func runLabelsCreate(cmd *cobra.Command, args []string) error {
 	created, err := service.Users.Labels.Create("me", label).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type labelCreateResult struct {
+			ID                    string `json:"id"`
+			Name                  string `json:"name"`
+			LabelListVisibility   string `json:"label_list_visibility"`
+			MessageListVisibility string `json:"message_list_visibility"`
+		}
+		return outputJSON(labelCreateResult{
+			ID:                    created.Id,
+			Name:                  created.Name,
+			LabelListVisibility:   created.LabelListVisibility,
+			MessageListVisibility: created.MessageListVisibility,
+		})
 	}
 
 	fmt.Printf("Label created: %s (%s)\n", created.Id, created.Name)
@@ -339,9 +375,21 @@ func runLabelsUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Update the label
-	_, err = service.Users.Labels.Update("me", labelID, label).Do()
+	updated, err := service.Users.Labels.Update("me", labelID, label).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type labelUpdateResult struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}
+		return outputJSON(labelUpdateResult{
+			ID:   updated.Id,
+			Name: updated.Name,
+		})
 	}
 
 	fmt.Printf("Label updated: %s\n", labelID)
@@ -401,6 +449,18 @@ func runLabelsDelete(cmd *cobra.Command, args []string) error {
 	err = service.Users.Labels.Delete("me", labelID).Do()
 	if err != nil {
 		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type labelDeleteResult struct {
+			ID      string `json:"id"`
+			Deleted bool   `json:"deleted"`
+		}
+		return outputJSON(labelDeleteResult{
+			ID:      labelID,
+			Deleted: true,
+		})
 	}
 
 	fmt.Printf("Label deleted: %s\n", labelID)
