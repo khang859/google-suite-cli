@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -14,6 +15,8 @@ var (
 	credentialsFile string
 	// userEmail is the email of the user to impersonate
 	userEmail string
+	// outputFormat controls output mode: "text" (default) or "json"
+	outputFormat string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -44,6 +47,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().StringVarP(&credentialsFile, "credentials-file", "c", "", "Path to service account JSON credentials")
 	rootCmd.PersistentFlags().StringVarP(&userEmail, "user", "u", "", "Email of user to impersonate")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "format", "f", "text", "Output format: text or json")
 }
 
 // GetCredentialsFile returns the credentials file path from the --credentials-file flag.
@@ -59,4 +63,19 @@ func GetUserEmail() string {
 // GetVerbose returns whether verbose mode is enabled.
 func GetVerbose() bool {
 	return verbose
+}
+
+// GetOutputFormat returns the output format from the --format flag.
+func GetOutputFormat() string {
+	return outputFormat
+}
+
+// outputJSON marshals v as indented JSON and prints it to stdout.
+func outputJSON(v interface{}) error {
+	jsonBytes, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	fmt.Println(string(jsonBytes))
+	return nil
 }

@@ -127,12 +127,39 @@ func runThreadsList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gmail API error: %w", err)
 	}
 
-	// Print results
+	// Handle empty results
 	if len(result.Threads) == 0 {
+		if GetOutputFormat() == "json" {
+			return outputJSON([]struct{}{})
+		}
 		fmt.Println("No threads found.")
 		return nil
 	}
 
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type threadListItem struct {
+			ThreadID     string `json:"thread_id"`
+			Snippet      string `json:"snippet"`
+			MessageCount int    `json:"message_count"`
+		}
+		var results []threadListItem
+		for _, thread := range result.Threads {
+			msgCount := 0
+			fullThread, err := service.Users.Threads.Get("me", thread.Id).Format("minimal").Do()
+			if err == nil {
+				msgCount = len(fullThread.Messages)
+			}
+			results = append(results, threadListItem{
+				ThreadID:     thread.Id,
+				Snippet:      thread.Snippet,
+				MessageCount: msgCount,
+			})
+		}
+		return outputJSON(results)
+	}
+
+	// Text output mode
 	for _, thread := range result.Threads {
 		// Get full thread to access message count
 		fullThread, err := service.Users.Threads.Get("me", thread.Id).Format("minimal").Do()
@@ -194,6 +221,45 @@ func runThreadsGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gmail API error: %w", err)
 	}
 
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type threadMessage struct {
+			From    string `json:"from"`
+			To      string `json:"to"`
+			Subject string `json:"subject"`
+			Date    string `json:"date"`
+			Body    string `json:"body"`
+		}
+		type threadGetResult struct {
+			ThreadID string          `json:"thread_id"`
+			Messages []threadMessage `json:"messages"`
+		}
+		result := threadGetResult{
+			ThreadID: thread.Id,
+		}
+		for _, msg := range thread.Messages {
+			headers := make(map[string]string)
+			if msg.Payload != nil {
+				for _, h := range msg.Payload.Headers {
+					headers[strings.ToLower(h.Name)] = h.Value
+				}
+			}
+			body := extractMessageBody(msg.Payload)
+			result.Messages = append(result.Messages, threadMessage{
+				From:    headers["from"],
+				To:      headers["to"],
+				Subject: headers["subject"],
+				Date:    headers["date"],
+				Body:    body,
+			})
+		}
+		if result.Messages == nil {
+			result.Messages = []threadMessage{}
+		}
+		return outputJSON(result)
+	}
+
+	// Text output mode
 	fmt.Printf("Thread: %s (%d messages)\n", thread.Id, len(thread.Messages))
 	fmt.Println(strings.Repeat("=", 60))
 

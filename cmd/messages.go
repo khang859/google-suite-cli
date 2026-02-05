@@ -205,11 +205,37 @@ func runMessagesList(cmd *cobra.Command, args []string) error {
 
 	// Check if no messages found
 	if len(resp.Messages) == 0 {
+		if GetOutputFormat() == "json" {
+			return outputJSON([]struct{}{})
+		}
 		fmt.Println("No messages found.")
 		return nil
 	}
 
-	// Print results
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type messageListItem struct {
+			ID       string `json:"id"`
+			ThreadID string `json:"thread_id"`
+			Snippet  string `json:"snippet"`
+		}
+		var results []messageListItem
+		for _, msg := range resp.Messages {
+			detail, err := service.Users.Messages.Get("me", msg.Id).Format("metadata").Do()
+			if err != nil {
+				results = append(results, messageListItem{ID: msg.Id, ThreadID: msg.ThreadId})
+				continue
+			}
+			results = append(results, messageListItem{
+				ID:       msg.Id,
+				ThreadID: msg.ThreadId,
+				Snippet:  detail.Snippet,
+			})
+		}
+		return outputJSON(results)
+	}
+
+	// Print results (text mode)
 	fmt.Printf("Messages (%d):\n\n", len(resp.Messages))
 	for _, msg := range resp.Messages {
 		// Get message details for snippet
@@ -284,24 +310,74 @@ func runMessagesGet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Print headers
+	// Extract body content
+	body := extractBody(msg)
+	if body == "" {
+		body = msg.Snippet
+	}
+
+	// Extract attachments
+	attachments := findAttachments(msg.Payload.Parts)
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type attachmentJSON struct {
+			Filename     string `json:"filename"`
+			MimeType     string `json:"mime_type"`
+			Size         int64  `json:"size"`
+			AttachmentID string `json:"attachment_id"`
+		}
+		type messageGetResult struct {
+			From        string           `json:"from"`
+			To          string           `json:"to"`
+			Subject     string           `json:"subject"`
+			Date        string           `json:"date"`
+			Body        string           `json:"body"`
+			Snippet     string           `json:"snippet"`
+			Labels      []string         `json:"labels"`
+			Attachments []attachmentJSON `json:"attachments"`
+		}
+		result := messageGetResult{
+			From:    from,
+			To:      to,
+			Subject: subject,
+			Date:    date,
+			Body:    body,
+			Snippet: msg.Snippet,
+			Labels:  msg.LabelIds,
+		}
+		if result.Labels == nil {
+			result.Labels = []string{}
+		}
+		for _, att := range attachments {
+			result.Attachments = append(result.Attachments, attachmentJSON{
+				Filename:     att.Filename,
+				MimeType:     att.MimeType,
+				Size:         att.Size,
+				AttachmentID: att.AttachmentId,
+			})
+		}
+		if result.Attachments == nil {
+			result.Attachments = []attachmentJSON{}
+		}
+		return outputJSON(result)
+	}
+
+	// Print headers (text mode)
 	fmt.Printf("From: %s\n", from)
 	fmt.Printf("To: %s\n", to)
 	fmt.Printf("Subject: %s\n", subject)
 	fmt.Printf("Date: %s\n", date)
 	fmt.Println("---")
 
-	// Extract body content
-	body := extractBody(msg)
+	// Print body content
 	if body != "" {
 		fmt.Println(body)
 	} else {
-		// Fallback to snippet
 		fmt.Printf("(Snippet) %s\n", msg.Snippet)
 	}
 
 	// Display attachment info if present
-	attachments := findAttachments(msg.Payload.Parts)
 	if len(attachments) > 0 {
 		fmt.Println("---")
 		for _, att := range attachments {
@@ -429,7 +505,28 @@ func runMessagesModify(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gmail API error: %w", err)
 	}
 
-	// Print success message with details
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type modifyResult struct {
+			MessageID     string   `json:"message_id"`
+			LabelsAdded   []string `json:"labels_added"`
+			LabelsRemoved []string `json:"labels_removed"`
+		}
+		result := modifyResult{
+			MessageID:     messageID,
+			LabelsAdded:   addLabelsList,
+			LabelsRemoved: removeLabelsList,
+		}
+		if result.LabelsAdded == nil {
+			result.LabelsAdded = []string{}
+		}
+		if result.LabelsRemoved == nil {
+			result.LabelsRemoved = []string{}
+		}
+		return outputJSON(result)
+	}
+
+	// Print success message with details (text mode)
 	fmt.Printf("Message modified: %s\n", messageID)
 	if len(addLabelsList) > 0 {
 		fmt.Printf("  Labels added: %s\n", strings.Join(addLabelsList, ", "))
@@ -533,6 +630,18 @@ func runMessagesGetAttachment(cmd *cobra.Command, args []string) error {
 	err = os.WriteFile(outputPath, decoded, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write attachment file: %w", err)
+	}
+
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type attachmentResult struct {
+			FilePath string `json:"file_path"`
+			Size     int64  `json:"size"`
+		}
+		return outputJSON(attachmentResult{
+			FilePath: outputPath,
+			Size:     int64(len(decoded)),
+		})
 	}
 
 	fmt.Printf("Attachment saved: %s (%d bytes)\n", outputPath, len(decoded))

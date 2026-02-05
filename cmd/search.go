@@ -93,11 +93,54 @@ func runSearch(cmd *cobra.Command, args []string) error {
 
 	// Handle empty results
 	if len(resp.Messages) == 0 {
+		if GetOutputFormat() == "json" {
+			return outputJSON([]struct{}{})
+		}
 		fmt.Println("No messages found matching query")
 		return nil
 	}
 
-	// Fetch and display each message
+	// JSON output mode
+	if GetOutputFormat() == "json" {
+		type searchResult struct {
+			ID       string `json:"id"`
+			ThreadID string `json:"thread_id"`
+			Date     string `json:"date"`
+			From     string `json:"from"`
+			Subject  string `json:"subject"`
+			Snippet  string `json:"snippet"`
+		}
+		var results []searchResult
+		for _, msg := range resp.Messages {
+			fullMsg, err := service.Users.Messages.Get("me", msg.Id).Format("metadata").MetadataHeaders("From", "Subject", "Date").Do()
+			if err != nil {
+				results = append(results, searchResult{ID: msg.Id, ThreadID: msg.ThreadId})
+				continue
+			}
+			var from, subject, date string
+			for _, header := range fullMsg.Payload.Headers {
+				switch header.Name {
+				case "From":
+					from = header.Value
+				case "Subject":
+					subject = header.Value
+				case "Date":
+					date = header.Value
+				}
+			}
+			results = append(results, searchResult{
+				ID:       fullMsg.Id,
+				ThreadID: fullMsg.ThreadId,
+				Date:     date,
+				From:     from,
+				Subject:  subject,
+				Snippet:  fullMsg.Snippet,
+			})
+		}
+		return outputJSON(results)
+	}
+
+	// Fetch and display each message (text mode)
 	for i, msg := range resp.Messages {
 		// Fetch full message details
 		fullMsg, err := service.Users.Messages.Get("me", msg.Id).Format("metadata").MetadataHeaders("From", "Subject", "Date").Do()
