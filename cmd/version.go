@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version is the current version of gsuite
-const Version = "0.1.0"
+// Version is set at build time via ldflags
+var Version = "dev"
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{

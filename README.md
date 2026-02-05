@@ -23,8 +23,21 @@ gsuite provides full access to Gmail operations including reading, sending, sear
 
 ## Installation
 
+### Quick Install
+
 ```bash
-# Build from source
+curl -sSL https://raw.githubusercontent.com/khang859/google-suite-cli/main/install.sh | sh
+```
+
+This detects your OS and architecture, downloads the latest release, and installs `gsuite` to `/usr/local/bin`.
+
+### Download from Releases
+
+Pre-built binaries for Linux, macOS, and Windows (amd64/arm64) are available on the [Releases](https://github.com/khang859/google-suite-cli/releases) page.
+
+### Build from Source
+
+```bash
 go build -o gsuite .
 ```
 
