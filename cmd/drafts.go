@@ -13,6 +13,13 @@ import (
 var (
 	// draftsListCmd flags
 	draftsMaxResults int64
+
+	// draftsCreateCmd flags
+	draftTo      string
+	draftSubject string
+	draftBody    string
+	draftCc      string
+	draftBcc     string
 )
 
 // draftsCmd represents the drafts command group
@@ -53,13 +60,114 @@ Displays the draft headers (To, Subject, Date) and body content.`,
 	RunE: runDraftsGet,
 }
 
+// draftsCreateCmd represents the drafts create command
+var draftsCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a new draft",
+	Long: `Create a new email draft in the authenticated user's Gmail account.
+
+Required flags:
+  --to, -t: Recipient email address
+  --subject, -s: Email subject
+  --body, -b: Plain text body content
+
+Optional flags:
+  --cc: CC recipients (comma-separated)
+  --bcc: BCC recipients (comma-separated)`,
+	Example: `  # Create a simple draft
+  gsuite drafts create --to "user@example.com" --subject "Hello" --body "Draft content"
+
+  # Create a draft with CC and BCC
+  gsuite drafts create -t "user@example.com" -s "Meeting" -b "Let's meet" --cc "cc@example.com"`,
+	RunE: runDraftsCreate,
+}
+
+// draftsUpdateCmd represents the drafts update command
+var draftsUpdateCmd = &cobra.Command{
+	Use:   "update <draft-id>",
+	Short: "Update an existing draft",
+	Long: `Update an existing draft with new content.
+
+Args:
+  draft-id: The ID of the draft to update (required)
+
+Optional flags (at least one required):
+  --to, -t: New recipient email address
+  --subject, -s: New email subject
+  --body, -b: New plain text body content
+  --cc: New CC recipients (comma-separated)
+  --bcc: New BCC recipients (comma-separated)
+
+Note: If a field is not provided, the existing value is preserved.`,
+	Example: `  # Update draft subject
+  gsuite drafts update r1234567890 --subject "Updated Subject"
+
+  # Update multiple fields
+  gsuite drafts update r1234567890 --to "new@example.com" --body "New content"`,
+	Args: cobra.ExactArgs(1),
+	RunE: runDraftsUpdate,
+}
+
+// draftsSendCmd represents the drafts send command
+var draftsSendCmd = &cobra.Command{
+	Use:   "send <draft-id>",
+	Short: "Send an existing draft",
+	Long: `Send an existing draft as an email message.
+
+Args:
+  draft-id: The ID of the draft to send (required)
+
+The draft will be removed from the drafts folder after sending.`,
+	Example: `  # Send a draft
+  gsuite drafts send r1234567890123456789`,
+	Args: cobra.ExactArgs(1),
+	RunE: runDraftsSend,
+}
+
+// draftsDeleteCmd represents the drafts delete command
+var draftsDeleteCmd = &cobra.Command{
+	Use:   "delete <draft-id>",
+	Short: "Delete a draft",
+	Long: `Permanently delete a draft from the authenticated user's Gmail account.
+
+Args:
+  draft-id: The ID of the draft to delete (required)
+
+Warning: This action cannot be undone.`,
+	Example: `  # Delete a draft
+  gsuite drafts delete r1234567890123456789`,
+	Args: cobra.ExactArgs(1),
+	RunE: runDraftsDelete,
+}
+
 func init() {
 	rootCmd.AddCommand(draftsCmd)
 	draftsCmd.AddCommand(draftsListCmd)
 	draftsCmd.AddCommand(draftsGetCmd)
+	draftsCmd.AddCommand(draftsCreateCmd)
+	draftsCmd.AddCommand(draftsUpdateCmd)
+	draftsCmd.AddCommand(draftsSendCmd)
+	draftsCmd.AddCommand(draftsDeleteCmd)
 
 	// draftsListCmd flags
 	draftsListCmd.Flags().Int64VarP(&draftsMaxResults, "max-results", "n", 10, "Maximum number of drafts to return (max 500)")
+
+	// draftsCreateCmd flags
+	draftsCreateCmd.Flags().StringVarP(&draftTo, "to", "t", "", "Recipient email address (required)")
+	draftsCreateCmd.Flags().StringVarP(&draftSubject, "subject", "s", "", "Email subject (required)")
+	draftsCreateCmd.Flags().StringVarP(&draftBody, "body", "b", "", "Plain text body content (required)")
+	draftsCreateCmd.Flags().StringVar(&draftCc, "cc", "", "CC recipients (comma-separated)")
+	draftsCreateCmd.Flags().StringVar(&draftBcc, "bcc", "", "BCC recipients (comma-separated)")
+	draftsCreateCmd.MarkFlagRequired("to")
+	draftsCreateCmd.MarkFlagRequired("subject")
+	draftsCreateCmd.MarkFlagRequired("body")
+
+	// draftsUpdateCmd flags (reuses same flag variables)
+	draftsUpdateCmd.Flags().StringVarP(&draftTo, "to", "t", "", "New recipient email address")
+	draftsUpdateCmd.Flags().StringVarP(&draftSubject, "subject", "s", "", "New email subject")
+	draftsUpdateCmd.Flags().StringVarP(&draftBody, "body", "b", "", "New plain text body content")
+	draftsUpdateCmd.Flags().StringVar(&draftCc, "cc", "", "New CC recipients (comma-separated)")
+	draftsUpdateCmd.Flags().StringVar(&draftBcc, "bcc", "", "New BCC recipients (comma-separated)")
 }
 
 func runDraftsList(cmd *cobra.Command, args []string) error {
@@ -276,5 +384,264 @@ func decodeDraftBase64URL(encoded string) string {
 		}
 	}
 	return string(decoded)
+}
+
+func runDraftsCreate(cmd *cobra.Command, args []string) error {
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Build RFC 2822 formatted message
+	message := buildRFC2822Message(draftTo, draftSubject, draftBody, draftCc, draftBcc)
+
+	// Base64url encode the message
+	encodedMessage := base64.URLEncoding.EncodeToString([]byte(message))
+
+	// Create the draft
+	draft := &gmail.Draft{
+		Message: &gmail.Message{
+			Raw: encodedMessage,
+		},
+	}
+
+	created, err := service.Users.Drafts.Create("me", draft).Do()
+	if err != nil {
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	fmt.Printf("Draft created: %s\n", created.Id)
+	return nil
+}
+
+func runDraftsUpdate(cmd *cobra.Command, args []string) error {
+	draftID := args[0]
+
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Check if at least one field is provided
+	if draftTo == "" && draftSubject == "" && draftBody == "" && draftCc == "" && draftBcc == "" {
+		return fmt.Errorf("at least one of --to, --subject, --body, --cc, or --bcc is required")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Get existing draft to preserve unmodified fields
+	existing, err := service.Users.Drafts.Get("me", draftID).Format("full").Do()
+	if err != nil {
+		return fmt.Errorf("draft not found: %s", draftID)
+	}
+
+	// Extract existing values from headers
+	var existingTo, existingSubject, existingCc, existingBcc string
+	if existing.Message != nil && existing.Message.Payload != nil {
+		for _, header := range existing.Message.Payload.Headers {
+			switch header.Name {
+			case "To":
+				existingTo = header.Value
+			case "Subject":
+				existingSubject = header.Value
+			case "Cc":
+				existingCc = header.Value
+			case "Bcc":
+				existingBcc = header.Value
+			}
+		}
+	}
+
+	// Extract existing body
+	existingBody := extractDraftBody(existing.Message)
+
+	// Use new values if provided, otherwise keep existing
+	finalTo := existingTo
+	if draftTo != "" {
+		finalTo = draftTo
+	}
+	finalSubject := existingSubject
+	if draftSubject != "" {
+		finalSubject = draftSubject
+	}
+	finalBody := existingBody
+	if draftBody != "" {
+		finalBody = draftBody
+	}
+	finalCc := existingCc
+	if draftCc != "" {
+		finalCc = draftCc
+	}
+	finalBcc := existingBcc
+	if draftBcc != "" {
+		finalBcc = draftBcc
+	}
+
+	// Build updated RFC 2822 message
+	message := buildRFC2822Message(finalTo, finalSubject, finalBody, finalCc, finalBcc)
+
+	// Base64url encode the message
+	encodedMessage := base64.URLEncoding.EncodeToString([]byte(message))
+
+	// Update the draft
+	draft := &gmail.Draft{
+		Message: &gmail.Message{
+			Raw: encodedMessage,
+		},
+	}
+
+	_, err = service.Users.Drafts.Update("me", draftID, draft).Do()
+	if err != nil {
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	fmt.Printf("Draft updated: %s\n", draftID)
+	return nil
+}
+
+func runDraftsSend(cmd *cobra.Command, args []string) error {
+	draftID := args[0]
+
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Send the draft
+	draft := &gmail.Draft{
+		Id: draftID,
+	}
+
+	sent, err := service.Users.Drafts.Send("me", draft).Do()
+	if err != nil {
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	fmt.Printf("Draft sent as message: %s\n", sent.Id)
+	return nil
+}
+
+func runDraftsDelete(cmd *cobra.Command, args []string) error {
+	draftID := args[0]
+
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Delete the draft
+	err = service.Users.Drafts.Delete("me", draftID).Do()
+	if err != nil {
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	fmt.Printf("Draft deleted: %s\n", draftID)
+	return nil
+}
+
+// buildRFC2822Message builds an RFC 2822 formatted email message.
+func buildRFC2822Message(to, subject, body, cc, bcc string) string {
+	var msg string
+
+	msg += fmt.Sprintf("To: %s\r\n", to)
+	if cc != "" {
+		msg += fmt.Sprintf("Cc: %s\r\n", cc)
+	}
+	if bcc != "" {
+		msg += fmt.Sprintf("Bcc: %s\r\n", bcc)
+	}
+	msg += fmt.Sprintf("Subject: %s\r\n", subject)
+	msg += "MIME-Version: 1.0\r\n"
+	msg += "Content-Type: text/plain; charset=\"UTF-8\"\r\n"
+	msg += "\r\n"
+	msg += body
+
+	return msg
 }
 
