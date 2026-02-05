@@ -33,15 +33,15 @@ None
 
 **Milestone Goal:** Add OAuth2 browser-based login flow for personal Gmail accounts alongside existing service account auth
 
-#### Phase 5: OAuth2 Core
+#### Phase 5: OAuth2 Core — Complete
 
 **Goal**: Implement token storage, browser opener, and OAuth2 authorization code flow with PKCE
 **Depends on**: v1.0 complete
 **Research**: Unlikely (Go stdlib oauth2 already in project)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
-- [ ] 05-01: TBD (run /gsd:plan-phase 5 to break down)
+- [x] 05-01: OAuth2 PKCE flow + token storage — completed 2026-02-05
 
 #### Phase 6: Auth Dispatcher
 
@@ -71,6 +71,6 @@ Plans:
 | 2. Core Read Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 3. Write Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Polish | v1.0 | 2/2 | Complete | 2026-02-05 |
-| 5. OAuth2 Core | v1.1 | 0/? | Not started | - |
+| 5. OAuth2 Core | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 6. Auth Dispatcher | v1.1 | 0/? | Not started | - |
 | 7. CLI Integration | v1.1 | 0/? | Not started | - |
