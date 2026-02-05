@@ -16,6 +16,10 @@ var (
 	maxResults int64
 	labelIDs   string
 	query      string
+
+	// messagesModifyCmd flags
+	addLabels    string
+	removeLabels string
 )
 
 // messagesCmd represents the messages command group
@@ -63,15 +67,49 @@ Prefers plain text body, falls back to snippet if not available.`,
 	RunE: runMessagesGet,
 }
 
+// messagesModifyCmd represents the messages modify command
+var messagesModifyCmd = &cobra.Command{
+	Use:   "modify <message-id>",
+	Short: "Modify labels on a message",
+	Long: `Add or remove labels from a Gmail message.
+
+At least one of --add-labels or --remove-labels is required.
+Labels can be system labels (INBOX, UNREAD, STARRED, etc.) or user-created label IDs.`,
+	Example: `  # Mark message as read (remove UNREAD label)
+  gsuite messages modify <id> --remove-labels UNREAD
+
+  # Archive message (remove INBOX label)
+  gsuite messages modify <id> --remove-labels INBOX
+
+  # Add custom label
+  gsuite messages modify <id> --add-labels Label_123
+
+  # Star a message
+  gsuite messages modify <id> --add-labels STARRED
+
+  # Add and remove labels at the same time
+  gsuite messages modify <id> --add-labels STARRED --remove-labels UNREAD
+
+  # Add multiple labels (comma-separated)
+  gsuite messages modify <id> --add-labels Label_1,Label_2,STARRED`,
+	Args: cobra.ExactArgs(1),
+	RunE: runMessagesModify,
+}
+
 func init() {
 	rootCmd.AddCommand(messagesCmd)
 	messagesCmd.AddCommand(messagesListCmd)
 	messagesCmd.AddCommand(messagesGetCmd)
+	messagesCmd.AddCommand(messagesModifyCmd)
 
 	// messagesListCmd flags
 	messagesListCmd.Flags().Int64VarP(&maxResults, "max-results", "n", 10, "Maximum number of messages to return (max 500)")
 	messagesListCmd.Flags().StringVar(&labelIDs, "label-ids", "", "Comma-separated label IDs to filter by (e.g., INBOX,UNREAD)")
 	messagesListCmd.Flags().StringVarP(&query, "query", "q", "", "Gmail search query string")
+
+	// messagesModifyCmd flags
+	messagesModifyCmd.Flags().StringVar(&addLabels, "add-labels", "", "Comma-separated label IDs to add (e.g., STARRED,Label_123)")
+	messagesModifyCmd.Flags().StringVar(&removeLabels, "remove-labels", "", "Comma-separated label IDs to remove (e.g., UNREAD,INBOX)")
 }
 
 func runMessagesList(cmd *cobra.Command, args []string) error {
@@ -271,4 +309,88 @@ func decodeBase64URL(encoded string) string {
 		}
 	}
 	return string(decoded)
+}
+
+func runMessagesModify(cmd *cobra.Command, args []string) error {
+	messageID := args[0]
+
+	// Validate that at least one label flag is provided
+	if addLabels == "" && removeLabels == "" {
+		return fmt.Errorf("at least one of --add-labels or --remove-labels required")
+	}
+
+	// Get credentials file and user email from root flags
+	credFile := GetCredentialsFile()
+	user := GetUserEmail()
+
+	// Validate user is provided
+	if user == "" {
+		return fmt.Errorf("--user flag required to specify email to impersonate")
+	}
+
+	// Create auth config
+	cfg := auth.Config{
+		CredentialsFile: credFile,
+		UserEmail:       user,
+	}
+
+	// Create context
+	ctx := context.Background()
+
+	// Create Gmail service
+	service, err := auth.NewGmailService(ctx, cfg)
+	if err != nil {
+		if credFile == "" {
+			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
+		}
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Build the modify request
+	modifyReq := &gmail.ModifyMessageRequest{}
+
+	// Parse and set labels to add
+	var addLabelsList []string
+	if addLabels != "" {
+		addLabelsList = strings.Split(addLabels, ",")
+		// Trim whitespace from each label
+		for i, label := range addLabelsList {
+			addLabelsList[i] = strings.TrimSpace(label)
+		}
+		modifyReq.AddLabelIds = addLabelsList
+	}
+
+	// Parse and set labels to remove
+	var removeLabelsList []string
+	if removeLabels != "" {
+		removeLabelsList = strings.Split(removeLabels, ",")
+		// Trim whitespace from each label
+		for i, label := range removeLabelsList {
+			removeLabelsList[i] = strings.TrimSpace(label)
+		}
+		modifyReq.RemoveLabelIds = removeLabelsList
+	}
+
+	// Execute the modify request
+	_, err = service.Users.Messages.Modify("me", messageID, modifyReq).Do()
+	if err != nil {
+		if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "Not Found") {
+			return fmt.Errorf("message not found: %s", messageID)
+		}
+		if strings.Contains(err.Error(), "Invalid label") {
+			return fmt.Errorf("invalid label ID in request: %w", err)
+		}
+		return fmt.Errorf("Gmail API error: %w", err)
+	}
+
+	// Print success message with details
+	fmt.Printf("Message modified: %s\n", messageID)
+	if len(addLabelsList) > 0 {
+		fmt.Printf("  Labels added: %s\n", strings.Join(addLabelsList, ", "))
+	}
+	if len(removeLabelsList) > 0 {
+		fmt.Printf("  Labels removed: %s\n", strings.Join(removeLabelsList, ", "))
+	}
+
+	return nil
 }
