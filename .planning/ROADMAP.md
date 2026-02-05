@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Go project setup, CLI framework, service account authentication ✓
 - [x] **Phase 2: Core Read Operations** - Messages list/get, threads, search, labels read ✓
 - [x] **Phase 3: Write Operations** - Send messages, drafts, labels management, delete ✓
-- [ ] **Phase 4: Polish** - Attachments, output formatting, error handling refinement
+- [x] **Phase 4: Polish** - Attachments, output formatting, error handling refinement ✓
 
 ## Phase Details
 
@@ -61,11 +61,11 @@ Plans:
 **Goal**: Production-ready CLI with attachments, formatting, and robust error handling
 **Depends on**: Phase 3
 **Research**: Unlikely (refinement work)
-**Plans**: TBD
+**Plans**: 2/2 complete
 
 Plans:
-- [ ] 04-01: Attachment download and send-with-attachment
-- [ ] 04-02: Output formatting (human-readable and JSON modes)
+- [x] 04-01: Attachment download and send-with-attachment ✓
+- [x] 04-02: Output formatting (human-readable and JSON modes) ✓
 
 ## Progress
 
@@ -77,4 +77,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 3/3 | Complete | 2026-02-04 |
 | 2. Core Read Operations | 3/3 | Complete | 2026-02-05 |
 | 3. Write Operations | 3/3 | Complete | 2026-02-05 |
-| 4. Polish | 0/2 | Not started | - |
+| 4. Polish | 2/2 | Complete | 2026-02-05 |
