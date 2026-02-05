@@ -8,73 +8,31 @@ Build a Go CLI for complete Gmail mailbox management via service account authent
 
 None
 
+## Milestones
+
+- ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
+
+## Completed Milestones
+
+- ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) (Phases 1-4) — SHIPPED 2026-02-05
+
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+<details>
+<summary>✅ v1.0 MVP (Phases 1-4) — SHIPPED 2026-02-05</summary>
 
-Decimal phases appear between their surrounding integers in numeric order.
+- [x] Phase 1: Foundation (3/3 plans) — completed 2026-02-04
+- [x] Phase 2: Core Read Operations (3/3 plans) — completed 2026-02-05
+- [x] Phase 3: Write Operations (3/3 plans) — completed 2026-02-05
+- [x] Phase 4: Polish (2/2 plans) — completed 2026-02-05
 
-- [x] **Phase 1: Foundation** - Go project setup, CLI framework, service account authentication ✓
-- [x] **Phase 2: Core Read Operations** - Messages list/get, threads, search, labels read ✓
-- [x] **Phase 3: Write Operations** - Send messages, drafts, labels management, delete ✓
-- [x] **Phase 4: Polish** - Attachments, output formatting, error handling refinement ✓
-
-## Phase Details
-
-### Phase 1: Foundation
-**Goal**: Working CLI skeleton with authenticated Gmail API connection
-**Depends on**: Nothing (first phase)
-**Research**: Likely (Google API setup)
-**Research topics**: Go Gmail API client library, service account auth with domain-wide delegation, credential loading (env var vs file path)
-**Plans**: TBD
-
-Plans:
-- [x] 01-01: Project structure, Go modules, CLI framework setup ✓
-- [x] 01-02: Service account authentication with flexible credential handling ✓
-- [x] 01-03: Basic Gmail API connection verification ✓
-
-### Phase 2: Core Read Operations
-**Goal**: Complete read-only Gmail access (list, get, search, labels, threads)
-**Depends on**: Phase 1
-**Research**: Unlikely (uses patterns from Phase 1)
-**Plans**: TBD
-
-Plans:
-- [x] 02-01: Messages list and get commands ✓
-- [x] 02-02: Search and labels list commands ✓
-- [x] 02-03: Threads list and get commands ✓
-
-### Phase 3: Write Operations
-**Goal**: Full write capabilities (send, drafts, labels CRUD, delete)
-**Depends on**: Phase 2
-**Research**: Unlikely (internal patterns)
-**Plans**: 3/3 complete
-
-Plans:
-- [x] 03-01: Send message command ✓
-- [x] 03-02: Draft create/update/send/delete commands ✓
-- [x] 03-03: Labels create/update/delete and message label operations ✓
-
-### Phase 4: Polish
-**Goal**: Production-ready CLI with attachments, formatting, and robust error handling
-**Depends on**: Phase 3
-**Research**: Unlikely (refinement work)
-**Plans**: 2/2 complete
-
-Plans:
-- [x] 04-01: Attachment download and send-with-attachment ✓
-- [x] 04-02: Output formatting (human-readable and JSON modes) ✓
+</details>
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 3/3 | Complete | 2026-02-04 |
-| 2. Core Read Operations | 3/3 | Complete | 2026-02-05 |
-| 3. Write Operations | 3/3 | Complete | 2026-02-05 |
-| 4. Polish | 2/2 | Complete | 2026-02-05 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation | v1.0 | 3/3 | Complete | 2026-02-04 |
+| 2. Core Read Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
+| 3. Write Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
+| 4. Polish | v1.0 | 2/2 | Complete | 2026-02-05 |
