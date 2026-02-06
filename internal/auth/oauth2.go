@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -146,6 +147,31 @@ func (c *OAuth2Config) Authenticate(ctx context.Context) (*oauth2.Token, error) 
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange authorization code for token: %w", err)
+	}
+
+	return token, nil
+}
+
+// DeviceAuthenticate performs the RFC 8628 device authorization flow for
+// headless environments where no browser is available on the machine.
+// It displays a verification URL and user code on stderr, then polls until
+// the user completes authentication on another device.
+func (c *OAuth2Config) DeviceAuthenticate(ctx context.Context) (*oauth2.Token, error) {
+	da, err := c.config.DeviceAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initiate device authorization: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "\nVisit: %s\n", da.VerificationURI)
+	fmt.Fprintf(os.Stderr, "Enter code: %s\n", da.UserCode)
+	if da.VerificationURIComplete != "" {
+		fmt.Fprintf(os.Stderr, "Or visit: %s\n", da.VerificationURIComplete)
+	}
+	fmt.Fprintf(os.Stderr, "\nWaiting for authentication...\n")
+
+	token, err := c.config.DeviceAccessToken(ctx, da)
+	if err != nil {
+		return nil, fmt.Errorf("device authorization failed: %w", err)
 	}
 
 	return token, nil
