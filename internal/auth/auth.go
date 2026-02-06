@@ -126,6 +126,52 @@ func extractOAuth2ClientCreds(jsonData []byte) (clientID, clientSecret string, e
 	return creds.ClientID, creds.ClientSecret, nil
 }
 
+// Login performs the OAuth2 browser-based login flow. It validates that the
+// credentials are OAuth2 client credentials (not service account), runs the
+// PKCE authorization flow, saves the token, and returns the authenticated
+// user's email address.
+func Login(ctx context.Context, credJSON []byte) (string, error) {
+	// Verify credential type is OAuth2
+	credType, err := detectCredentialType(credJSON)
+	if err != nil {
+		return "", err
+	}
+	if credType == credServiceAccount {
+		return "", fmt.Errorf("login is only for OAuth2 client credentials; service accounts authenticate automatically")
+	}
+
+	// Extract client credentials
+	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract OAuth2 client credentials: %w", err)
+	}
+
+	// Run OAuth2 PKCE flow
+	oauthCfg := NewOAuth2Config(clientID, clientSecret)
+	token, err := oauthCfg.Authenticate(ctx)
+	if err != nil {
+		return "", fmt.Errorf("authentication failed: %w", err)
+	}
+
+	// Save token
+	if err := SaveToken(token); err != nil {
+		return "", fmt.Errorf("failed to save token: %w", err)
+	}
+
+	// Create a temporary Gmail service to get the user's email
+	service, err := oauthCfg.NewGmailService(ctx, token)
+	if err != nil {
+		return "", fmt.Errorf("failed to create Gmail service: %w", err)
+	}
+
+	profile, err := service.Users.GetProfile("me").Do()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user profile: %w", err)
+	}
+
+	return profile.EmailAddress, nil
+}
+
 // NewGmailService creates an authenticated Gmail service. It auto-detects the
 // credential type from the JSON and dispatches to the appropriate auth flow:
 //   - Service account: uses domain-wide delegation (requires cfg.UserEmail)
