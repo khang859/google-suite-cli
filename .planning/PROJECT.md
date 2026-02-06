@@ -22,10 +22,11 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 - ✓ Auto-detecting credential type dispatcher (service account vs OAuth2) — v1.1
 - ✓ Token persistence with secure XDG-compatible storage — v1.1
 - ✓ Login/logout commands for OAuth2 flow management — v1.1
+- ✓ Device authorization flow for headless OAuth2 login (--no-browser) — v1.2
 
 ### Active
 
-(None — all v1.0 and v1.1 requirements shipped)
+(None — all v1.0, v1.1, and v1.2 requirements shipped)
 
 ### Out of Scope
 
@@ -35,15 +36,15 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 
 ## Context
 
-Shipped v1.1 with 3,411 LOC across 13 Go files.
-Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth, OAuth2 PKCE.
-50 commits over 2 days. 7 phases (14 plans) across 2 milestones complete.
-Dual auth: service accounts for workspace, OAuth2 for personal Gmail.
+Shipped v1.2 with 3,455 LOC across 13 Go files.
+Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth, OAuth2 PKCE, RFC 8628 device flow.
+55 commits over 2 days. 8 phases (15 plans) across 3 milestones complete.
+Triple auth paths: service accounts for workspace, OAuth2 browser for personal, device flow for headless.
 
 ## Constraints
 
 - **Tech stack**: Go — single binary, good for CLI tools
-- **Auth**: Dual auth — service account (workspace) and OAuth2 PKCE (personal)
+- **Auth**: Triple auth — service account (workspace), OAuth2 PKCE (personal), device flow (headless)
 - **Security**: Credentials via env var (preferred) or file path; tokens stored with 0600 permissions
 
 ## Key Decisions
@@ -62,6 +63,8 @@ Dual auth: service accounts for workspace, OAuth2 for personal Gmail.
 | Auto-detect credential type from JSON | Transparent auth — user doesn't need to specify mode | ✓ Good |
 | XDG-compatible token storage | Standard path (~/.config/gsuite/), secure permissions | ✓ Good |
 | auth.Login() encapsulates full flow | Clean CLI layer, single function call for entire auth sequence | ✓ Good |
+| Device flow output to stderr | Keep stdout scriptable, device prompts go to stderr | ✓ Good |
+| golang.org/x/oauth2 device flow | Built-in support, no custom implementation needed | ✓ Good |
 
 ---
-*Last updated: 2026-02-06 after v1.1 milestone*
+*Last updated: 2026-02-06 after v1.2 milestone*

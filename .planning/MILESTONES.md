@@ -1,5 +1,29 @@
 # Project Milestones: Google Suite CLI
 
+## v1.2 Headless Login (Shipped: 2026-02-06)
+
+**Delivered:** RFC 8628 device authorization flow for OAuth2 login on headless machines — `gsuite login --no-browser` prints a verification URL and code to stderr for cross-device authentication.
+
+**Phases completed:** 8 (1 plan total)
+
+**Key accomplishments:**
+- DeviceAuthenticate method using golang.org/x/oauth2 built-in device flow
+- `--no-browser` flag on `gsuite login` for headless environments (EC2, SSH, containers)
+- Stderr output for device flow prompts (stdout stays scriptable)
+
+**Stats:**
+- 7 files changed, 265 insertions, 25 deletions
+- 3,455 lines of Go (total project)
+- 1 phase, 1 plan, 2 tasks
+- 1 day (2026-02-05 → 2026-02-06)
+- 5 commits
+
+**Git range:** `ed42a27` (milestone start) → `cf9b6d0` (plan complete)
+
+**What's next:** TBD — potential areas include Calendar/Drive support, batch operations, or interactive mode.
+
+---
+
 ## v1.1 OAuth2 Support (Shipped: 2026-02-06)
 
 **Delivered:** OAuth2 browser-based login for personal Gmail accounts — `gsuite login` triggers PKCE flow, auto-detecting credential type dispatches between service account and OAuth2 transparently.

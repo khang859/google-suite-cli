@@ -18,6 +18,7 @@ None
 
 - ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) (Phases 1-4) — SHIPPED 2026-02-05
 - ✅ [v1.1 OAuth2 Support](milestones/v1.1-ROADMAP.md) (Phases 5-7) — SHIPPED 2026-02-06
+- ✅ [v1.2 Headless Login](milestones/v1.2-ROADMAP.md) (Phase 8) — SHIPPED 2026-02-06
 
 ## Phases
 
@@ -40,19 +41,12 @@ None
 
 </details>
 
-### ✅ v1.2 Headless Login (Shipped 2026-02-06)
+<details>
+<summary>✅ v1.2 Headless Login (Phase 8) — SHIPPED 2026-02-06</summary>
 
-**Milestone Goal:** Enable OAuth2 login on headless machines (EC2, SSH, containers) via device authorization flow
+- [x] Phase 8: Device Authorization Flow (1/1 plan) — completed 2026-02-06
 
-#### Phase 8: Device Authorization Flow
-
-**Goal**: Add `--no-browser` flag to `gsuite login` using RFC 8628 device flow
-**Depends on**: v1.1 complete
-**Research**: Unlikely (`golang.org/x/oauth2` has built-in device flow support)
-**Plans**: 1 plan
-
-Plans:
-- [x] 08-01: Implement device authorization flow (`--no-browser` flag, device auth method, CLI integration)
+</details>
 
 ## Progress
 

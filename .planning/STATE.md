@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** v1.2 Headless Login
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 8 of 8 (Device Authorization Flow)
-Plan: 1 of 1
-Status: Phase complete
-Last activity: 2026-02-06 — Completed 08-01-PLAN.md
+Phase: 8 of 8 (all phases complete)
+Plan: All complete
+Status: Ready to plan next milestone
+Last activity: 2026-02-06 — v1.2 milestone complete
 
-Progress: ██████████ 100%
+Progress: ██████████ 100% (3 milestones shipped)
 
 ## Performance Metrics
 
@@ -54,10 +54,10 @@ None.
 
 - Milestone v1.0 created and shipped: Full Gmail CLI with API coverage
 - Milestone v1.1 created and shipped: OAuth2 browser-based login for personal Gmail
-- Milestone v1.2 created and shipped: Headless device auth flow for EC2/SSH login, 1 phase (Phase 8)
+- Milestone v1.2 created and shipped: Headless device auth flow for EC2/SSH login
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Milestone v1.2 complete
+Stopped at: Milestone v1.2 archived
 Resume file: None
