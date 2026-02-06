@@ -43,15 +43,15 @@ None
 Plans:
 - [x] 05-01: OAuth2 PKCE flow + token storage — completed 2026-02-05
 
-#### Phase 6: Auth Dispatcher
+#### Phase 6: Auth Dispatcher — Complete
 
 **Goal**: Refactor auth.go to auto-detect credential type from JSON and branch between service account / OAuth flows
 **Depends on**: Phase 5
 **Research**: Unlikely (internal refactor)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
-- [ ] 06-01: TBD (run /gsd:plan-phase 6 to break down)
+- [x] 06-01: Credential type detection + auth dispatcher — completed 2026-02-06
 
 #### Phase 7: CLI Integration
 
@@ -72,5 +72,5 @@ Plans:
 | 3. Write Operations | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Polish | v1.0 | 2/2 | Complete | 2026-02-05 |
 | 5. OAuth2 Core | v1.1 | 1/1 | Complete | 2026-02-05 |
-| 6. Auth Dispatcher | v1.1 | 0/? | Not started | - |
+| 6. Auth Dispatcher | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 7. CLI Integration | v1.1 | 0/? | Not started | - |
