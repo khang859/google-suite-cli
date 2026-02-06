@@ -48,11 +48,6 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Validate max-results
 	if searchMaxResults < 1 || searchMaxResults > 500 {
 		return fmt.Errorf("--max-results must be between 1 and 500")

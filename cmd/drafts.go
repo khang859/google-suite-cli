@@ -175,11 +175,6 @@ func runDraftsList(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,
@@ -317,11 +312,6 @@ func runDraftsGet(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,
@@ -456,11 +446,6 @@ func runDraftsCreate(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,
@@ -523,11 +508,6 @@ func runDraftsUpdate(cmd *cobra.Command, args []string) error {
 	// Get credentials file and user email from root flags
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
-
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
 
 	// Check if at least one field is provided
 	if draftTo == "" && draftSubject == "" && draftBody == "" && draftCc == "" && draftBcc == "" {
@@ -645,11 +625,6 @@ func runDraftsSend(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,
@@ -698,11 +673,6 @@ func runDraftsDelete(cmd *cobra.Command, args []string) error {
 	// Get credentials file and user email from root flags
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
-
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
 
 	// Create auth config
 	cfg := auth.Config{

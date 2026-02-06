@@ -31,11 +31,6 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,

@@ -25,9 +25,12 @@ var rootCmd = &cobra.Command{
 	Short: "Gmail CLI tool",
 	Long: `gsuite is a command-line interface for Gmail mailbox management.
 
-It uses service account authentication with domain-wide delegation to provide
-full access to Gmail operations including reading, sending, searching, and
-managing messages, threads, labels, and drafts.
+It supports two authentication methods:
+  - Service account with domain-wide delegation (requires --user flag)
+  - OAuth2 browser-based login for personal Gmail (use 'gsuite login')
+
+Provides full access to Gmail operations including reading, sending, searching,
+and managing messages, threads, labels, and drafts.
 
 Designed for automation workflows and scripting with support for both
 human-readable and JSON output formats.`,
@@ -46,7 +49,7 @@ func init() {
 	// Persistent flags available to all subcommands
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().StringVarP(&credentialsFile, "credentials-file", "c", "", "Path to service account JSON credentials")
-	rootCmd.PersistentFlags().StringVarP(&userEmail, "user", "u", "", "Email of user to impersonate")
+	rootCmd.PersistentFlags().StringVarP(&userEmail, "user", "u", "", "Email of user to impersonate (required for service account, ignored for OAuth2)")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "format", "f", "text", "Output format: text or json")
 }
 

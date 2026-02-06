@@ -146,11 +146,6 @@ func runLabelsList(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Create auth config
 	cfg := auth.Config{
 		CredentialsFile: credFile,
@@ -238,11 +233,6 @@ func runLabelsCreate(cmd *cobra.Command, args []string) error {
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
 
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
-
 	// Validate name is provided
 	if labelName == "" {
 		return fmt.Errorf("--name flag is required")
@@ -316,11 +306,6 @@ func runLabelsUpdate(cmd *cobra.Command, args []string) error {
 	// Get credentials file and user email from root flags
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
-
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
 
 	// Check if at least one update flag is provided
 	if labelName == "" && labelListVisibility == "" && messageListVisibility == "" {
@@ -407,11 +392,6 @@ func runLabelsDelete(cmd *cobra.Command, args []string) error {
 	// Get credentials file and user email from root flags
 	credFile := GetCredentialsFile()
 	user := GetUserEmail()
-
-	// Validate user is provided
-	if user == "" {
-		return fmt.Errorf("--user flag required to specify email to impersonate")
-	}
 
 	// Create auth config
 	cfg := auth.Config{
