@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
@@ -126,11 +127,12 @@ func extractOAuth2ClientCreds(jsonData []byte) (clientID, clientSecret string, e
 	return creds.ClientID, creds.ClientSecret, nil
 }
 
-// Login performs the OAuth2 browser-based login flow. It validates that the
-// credentials are OAuth2 client credentials (not service account), runs the
-// PKCE authorization flow, saves the token, and returns the authenticated
-// user's email address.
-func Login(ctx context.Context, credJSON []byte) (string, error) {
+// Login performs the OAuth2 login flow. It validates that the credentials are
+// OAuth2 client credentials (not service account), runs the appropriate
+// authorization flow, saves the token, and returns the authenticated user's
+// email address. When noBrowser is true, it uses the RFC 8628 device
+// authorization flow instead of the browser-based PKCE flow.
+func Login(ctx context.Context, credJSON []byte, noBrowser bool) (string, error) {
 	// Verify credential type is OAuth2
 	credType, err := detectCredentialType(credJSON)
 	if err != nil {
@@ -146,9 +148,14 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 		return "", fmt.Errorf("failed to extract OAuth2 client credentials: %w", err)
 	}
 
-	// Run OAuth2 PKCE flow
+	// Run appropriate OAuth2 flow
 	oauthCfg := NewOAuth2Config(clientID, clientSecret)
-	token, err := oauthCfg.Authenticate(ctx)
+	var token *oauth2.Token
+	if noBrowser {
+		token, err = oauthCfg.DeviceAuthenticate(ctx)
+	} else {
+		token, err = oauthCfg.Authenticate(ctx)
+	}
 	if err != nil {
 		return "", fmt.Errorf("authentication failed: %w", err)
 	}

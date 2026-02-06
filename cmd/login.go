@@ -9,24 +9,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// noBrowser controls whether to use the device authorization flow instead of the browser flow.
+var noBrowser bool
+
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Authenticate with Gmail using OAuth2 browser flow",
-	Long: `Authenticate with Gmail using OAuth2 browser-based login.
+	Short: "Authenticate with Gmail using OAuth2",
+	Long: `Authenticate with Gmail using OAuth2.
 
-This command opens your browser to complete the Google OAuth2 consent flow.
+By default, this command opens your browser to complete the Google OAuth2 consent
+flow. Use --no-browser for headless environments (SSH, EC2, containers) which
+uses the RFC 8628 device authorization flow instead — it displays a URL and code
+that you can enter on any device with a browser.
+
 After authentication, a token is saved locally so subsequent commands work
 without needing to log in again.
 
 Requires OAuth2 client credentials (not a service account). Provide credentials
 via --credentials-file flag or GOOGLE_CREDENTIALS / GOOGLE_APPLICATION_CREDENTIALS
 environment variables.`,
-	Example: `  # Login with default credentials
+	Example: `  # Login with default credentials (opens browser)
   gsuite login
 
   # Login with a specific credentials file
-  gsuite login -c /path/to/oauth2-client.json`,
+  gsuite login -c /path/to/oauth2-client.json
+
+  # Login on headless environments (SSH, EC2, containers)
+  gsuite login --no-browser`,
 	RunE: runLogin,
 }
 
@@ -42,6 +52,7 @@ After logout, you will need to run 'gsuite login' again to authenticate.`,
 }
 
 func init() {
+	loginCmd.Flags().BoolVar(&noBrowser, "no-browser", false, "Use device authorization flow for headless environments")
 	rootCmd.AddCommand(loginCmd)
 	rootCmd.AddCommand(logoutCmd)
 }
@@ -60,7 +71,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	email, err := auth.Login(ctx, credJSON)
+	email, err := auth.Login(ctx, credJSON, noBrowser)
 	if err != nil {
 		return err
 	}
