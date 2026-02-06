@@ -11,7 +11,7 @@ None
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
-- 🚧 **v1.1 OAuth2 Support** — Phases 5-7 (in progress)
+- ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
 
 ## Completed Milestones
 
@@ -29,7 +29,7 @@ None
 
 </details>
 
-### 🚧 v1.1 OAuth2 Support (In Progress)
+### ✅ v1.1 OAuth2 Support (Shipped 2026-02-06)
 
 **Milestone Goal:** Add OAuth2 browser-based login flow for personal Gmail accounts alongside existing service account auth
 
@@ -53,15 +53,15 @@ Plans:
 Plans:
 - [x] 06-01: Credential type detection + auth dispatcher — completed 2026-02-06
 
-#### Phase 7: CLI Integration
+#### Phase 7: CLI Integration — Complete
 
 **Goal**: Add `login` command, remove `--user` guards from 7 command files, update help text
 **Depends on**: Phase 6
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
-- [ ] 07-01: TBD (run /gsd:plan-phase 7 to break down)
+- [x] 07-01: Login/logout commands + --user guard removal — completed 2026-02-06
 
 ## Progress
 
@@ -73,4 +73,4 @@ Plans:
 | 4. Polish | v1.0 | 2/2 | Complete | 2026-02-05 |
 | 5. OAuth2 Core | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 6. Auth Dispatcher | v1.1 | 1/1 | Complete | 2026-02-06 |
-| 7. CLI Integration | v1.1 | 0/? | Not started | - |
+| 7. CLI Integration | v1.1 | 1/1 | Complete | 2026-02-06 |
