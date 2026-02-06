@@ -1,5 +1,31 @@
 # Project Milestones: Google Suite CLI
 
+## v1.1 OAuth2 Support (Shipped: 2026-02-06)
+
+**Delivered:** OAuth2 browser-based login for personal Gmail accounts — `gsuite login` triggers PKCE flow, auto-detecting credential type dispatches between service account and OAuth2 transparently.
+
+**Phases completed:** 5-7 (3 plans total)
+
+**Key accomplishments:**
+- OAuth2 PKCE authorization flow with browser-based login and XDG-compatible token storage
+- Auto-detecting credential type dispatcher (service account vs OAuth2 from JSON structure)
+- `gsuite login` / `gsuite logout` commands for OAuth2 flow
+- Removed 18 --user guards — all commands work with both auth methods transparently
+- Secure token persistence (0600 file, 0700 directory permissions)
+
+**Stats:**
+- 18 files changed, 1,023 insertions, 130 deletions
+- 3,411 lines of Go (total project)
+- 3 phases, 3 plans, 7 tasks
+- 1 day (2026-02-05 → 2026-02-06)
+- 9 commits
+
+**Git range:** `4d9d932` (phase 5 start) → `9ddfba0` (phase 7 end)
+
+**What's next:** TBD — potential areas include Calendar/Drive support, batch operations, or interactive mode.
+
+---
+
 ## v1.0 MVP (Shipped: 2026-02-05)
 
 **Delivered:** Complete Gmail CLI with full API coverage — read, write, search, labels, threads, drafts, attachments, and JSON output.

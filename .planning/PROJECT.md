@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Go CLI tool for full Gmail mailbox management via service account authentication. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes. Designed for personal automation workflows running on an always-on AI agent.
+A Go CLI tool for full Gmail mailbox management with dual authentication — service account with domain-wide delegation for workspace environments, and OAuth2 browser-based login for personal Gmail accounts. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes.
 
 ## Core Value
 
@@ -18,28 +18,33 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 - ✓ Intuitive CLI UX with consistent command structure — v1.0
 - ✓ Good output formatting (human-readable and JSON for scripting) — v1.0
 - ✓ Clear error messages for auth and API failures — v1.0
+- ✓ OAuth2 browser-based login for personal Gmail (PKCE flow) — v1.1
+- ✓ Auto-detecting credential type dispatcher (service account vs OAuth2) — v1.1
+- ✓ Token persistence with secure XDG-compatible storage — v1.1
+- ✓ Login/logout commands for OAuth2 flow management — v1.1
 
 ### Active
 
-(None — all v1.0 requirements shipped)
+(None — all v1.0 and v1.1 requirements shipped)
 
 ### Out of Scope
 
-- Other Google services (Calendar, Drive, etc.) — Gmail only for v1
-- OAuth user flow — service account auth only for v1
+- Other Google services (Calendar, Drive, etc.) — Gmail only for now
 - GUI/TUI — pure CLI, no interactive interface
+- Token refresh UI — silent refresh via oauth2 library, no user interaction needed
 
 ## Context
 
-Shipped v1.0 with 2,972 LOC across 11 Go files.
-Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth.
-41 commits over 2 days. All 4 phases (11 plans) complete.
+Shipped v1.1 with 3,411 LOC across 13 Go files.
+Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth, OAuth2 PKCE.
+50 commits over 2 days. 7 phases (14 plans) across 2 milestones complete.
+Dual auth: service accounts for workspace, OAuth2 for personal Gmail.
 
 ## Constraints
 
 - **Tech stack**: Go — single binary, good for CLI tools
-- **Auth**: Service account only — no OAuth flow complexity
-- **Security**: Credentials via env var (preferred) or file path — flexible for different deployment scenarios
+- **Auth**: Dual auth — service account (workspace) and OAuth2 PKCE (personal)
+- **Security**: Credentials via env var (preferred) or file path; tokens stored with 0600 permissions
 
 ## Key Decisions
 
@@ -53,6 +58,10 @@ Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth.
 | text/plain over HTML for body display | Cleaner CLI output | ✓ Good |
 | snake_case JSON keys | Standard JSON convention, consistent parsing | ✓ Good |
 | Local struct types for JSON | Co-located with producing code, no leaky abstractions | ✓ Good |
+| OAuth2 PKCE for personal Gmail | Secure public client auth, no client secret exposure | ✓ Good |
+| Auto-detect credential type from JSON | Transparent auth — user doesn't need to specify mode | ✓ Good |
+| XDG-compatible token storage | Standard path (~/.config/gsuite/), secure permissions | ✓ Good |
+| auth.Login() encapsulates full flow | Clean CLI layer, single function call for entire auth sequence | ✓ Good |
 
 ---
-*Last updated: 2026-02-05 after v1.0 milestone*
+*Last updated: 2026-02-06 after v1.1 milestone*

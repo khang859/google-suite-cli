@@ -16,6 +16,7 @@ None
 ## Completed Milestones
 
 - ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) (Phases 1-4) — SHIPPED 2026-02-05
+- ✅ [v1.1 OAuth2 Support](milestones/v1.1-ROADMAP.md) (Phases 5-7) — SHIPPED 2026-02-06
 
 ## Phases
 
@@ -29,39 +30,14 @@ None
 
 </details>
 
-### ✅ v1.1 OAuth2 Support (Shipped 2026-02-06)
+<details>
+<summary>✅ v1.1 OAuth2 Support (Phases 5-7) — SHIPPED 2026-02-06</summary>
 
-**Milestone Goal:** Add OAuth2 browser-based login flow for personal Gmail accounts alongside existing service account auth
+- [x] Phase 5: OAuth2 Core (1/1 plan) — completed 2026-02-05
+- [x] Phase 6: Auth Dispatcher (1/1 plan) — completed 2026-02-06
+- [x] Phase 7: CLI Integration (1/1 plan) — completed 2026-02-06
 
-#### Phase 5: OAuth2 Core — Complete
-
-**Goal**: Implement token storage, browser opener, and OAuth2 authorization code flow with PKCE
-**Depends on**: v1.0 complete
-**Research**: Unlikely (Go stdlib oauth2 already in project)
-**Plans**: 1
-
-Plans:
-- [x] 05-01: OAuth2 PKCE flow + token storage — completed 2026-02-05
-
-#### Phase 6: Auth Dispatcher — Complete
-
-**Goal**: Refactor auth.go to auto-detect credential type from JSON and branch between service account / OAuth flows
-**Depends on**: Phase 5
-**Research**: Unlikely (internal refactor)
-**Plans**: 1
-
-Plans:
-- [x] 06-01: Credential type detection + auth dispatcher — completed 2026-02-06
-
-#### Phase 7: CLI Integration — Complete
-
-**Goal**: Add `login` command, remove `--user` guards from 7 command files, update help text
-**Depends on**: Phase 6
-**Research**: Unlikely (internal patterns)
-**Plans**: 1
-
-Plans:
-- [x] 07-01: Login/logout commands + --user guard removal — completed 2026-02-06
+</details>
 
 ## Progress
 
