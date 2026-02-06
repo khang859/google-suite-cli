@@ -12,7 +12,7 @@ None
 
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
 - ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
-- 🚧 **v1.2 Headless Login** — Phase 8 (in progress)
+- ✅ **v1.2 Headless Login** — Phase 8 (shipped 2026-02-06)
 
 ## Completed Milestones
 
@@ -40,7 +40,7 @@ None
 
 </details>
 
-### 🚧 v1.2 Headless Login (In Progress)
+### ✅ v1.2 Headless Login (Shipped 2026-02-06)
 
 **Milestone Goal:** Enable OAuth2 login on headless machines (EC2, SSH, containers) via device authorization flow
 
@@ -52,7 +52,7 @@ None
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01: Implement device authorization flow (`--no-browser` flag, device auth method, CLI integration)
+- [x] 08-01: Implement device authorization flow (`--no-browser` flag, device auth method, CLI integration)
 
 ## Progress
 
@@ -65,4 +65,4 @@ Plans:
 | 5. OAuth2 Core | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 6. Auth Dispatcher | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 7. CLI Integration | v1.1 | 1/1 | Complete | 2026-02-06 |
-| 8. Device Authorization Flow | v1.2 | 0/1 | Not started | - |
+| 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
