@@ -1,14 +1,25 @@
-// Package auth provides authentication functionality for Google APIs using service accounts.
+// Package auth provides authentication functionality for Google APIs
+// using service accounts or OAuth2 client credentials.
 package auth
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
+)
+
+// credentialType represents the type of Google credentials JSON.
+type credentialType int
+
+const (
+	credServiceAccount credentialType = iota
+	credOAuth2Client
 )
 
 // Config holds the authentication configuration.
@@ -21,7 +32,7 @@ type Config struct {
 	UserEmail string
 }
 
-// LoadCredentials loads service account credentials from various sources.
+// LoadCredentials loads credentials JSON from various sources.
 // Priority order:
 // 1. cfg.CredentialsJSON if set
 // 2. cfg.CredentialsFile if set
@@ -59,39 +70,128 @@ func LoadCredentials(cfg Config) ([]byte, error) {
 	return nil, fmt.Errorf("no credentials found: set --credentials-file flag, GOOGLE_CREDENTIALS env var (JSON), or GOOGLE_APPLICATION_CREDENTIALS env var (file path)")
 }
 
-// NewGmailService creates an authenticated Gmail service using service account credentials.
-// The cfg.UserEmail field is required for domain-wide delegation - it specifies which user
-// the service account will impersonate.
-func NewGmailService(ctx context.Context, cfg Config) (*gmail.Service, error) {
-	// Validate that UserEmail is set (required for domain-wide delegation)
-	if cfg.UserEmail == "" {
-		return nil, fmt.Errorf("user email is required for domain-wide delegation: set --user flag")
+// detectCredentialType parses the JSON and determines whether it represents
+// service account credentials or OAuth2 client credentials.
+func detectCredentialType(jsonData []byte) (credentialType, error) {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(jsonData, &raw); err != nil {
+		return 0, fmt.Errorf("failed to parse credentials JSON: %w", err)
 	}
 
+	// Service account JSON has "type": "service_account"
+	if t, ok := raw["type"].(string); ok && t == "service_account" {
+		return credServiceAccount, nil
+	}
+
+	// OAuth2 client credentials JSON has "installed" or "web" key
+	if _, ok := raw["installed"]; ok {
+		return credOAuth2Client, nil
+	}
+	if _, ok := raw["web"]; ok {
+		return credOAuth2Client, nil
+	}
+
+	return 0, fmt.Errorf("unrecognized credentials format: expected service account JSON (with \"type\": \"service_account\"), or OAuth2 client JSON (with \"installed\" or \"web\" key)")
+}
+
+// extractOAuth2ClientCreds extracts the client_id and client_secret from
+// an OAuth2 client credentials JSON file (either "installed" or "web" format).
+func extractOAuth2ClientCreds(jsonData []byte) (clientID, clientSecret string, err error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(jsonData, &raw); err != nil {
+		return "", "", fmt.Errorf("failed to parse credentials JSON: %w", err)
+	}
+
+	var clientJSON json.RawMessage
+	if data, ok := raw["installed"]; ok {
+		clientJSON = data
+	} else if data, ok := raw["web"]; ok {
+		clientJSON = data
+	} else {
+		return "", "", fmt.Errorf("credentials JSON has neither \"installed\" nor \"web\" key")
+	}
+
+	var creds struct {
+		ClientID     string `json:"client_id"`
+		ClientSecret string `json:"client_secret"`
+	}
+	if err := json.Unmarshal(clientJSON, &creds); err != nil {
+		return "", "", fmt.Errorf("failed to parse client credentials: %w", err)
+	}
+
+	if creds.ClientID == "" {
+		return "", "", fmt.Errorf("client_id is empty in credentials JSON")
+	}
+
+	return creds.ClientID, creds.ClientSecret, nil
+}
+
+// NewGmailService creates an authenticated Gmail service. It auto-detects the
+// credential type from the JSON and dispatches to the appropriate auth flow:
+//   - Service account: uses domain-wide delegation (requires cfg.UserEmail)
+//   - OAuth2 client: uses cached token from ~/.config/gsuite/token.json
+func NewGmailService(ctx context.Context, cfg Config) (*gmail.Service, error) {
 	// Load credentials
 	credJSON, err := LoadCredentials(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
 
-	// Parse the service account JSON and create JWT config
-	// Scopes: GmailModifyScope provides full read/write access to mailbox
+	// Detect credential type
+	credType, err := detectCredentialType(credJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	switch credType {
+	case credServiceAccount:
+		return newServiceAccountGmailService(ctx, cfg, credJSON)
+	case credOAuth2Client:
+		return newOAuth2GmailService(ctx, credJSON)
+	default:
+		return nil, fmt.Errorf("unsupported credential type")
+	}
+}
+
+// newServiceAccountGmailService creates a Gmail service using service account
+// credentials with domain-wide delegation.
+func newServiceAccountGmailService(ctx context.Context, cfg Config, credJSON []byte) (*gmail.Service, error) {
+	if cfg.UserEmail == "" {
+		return nil, fmt.Errorf("user email is required for service account authentication: set --user flag")
+	}
+
 	jwtConfig, err := google.JWTConfigFromJSON(credJSON, gmail.GmailModifyScope)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse service account credentials: %w", err)
 	}
 
-	// Set the subject (user to impersonate) for domain-wide delegation
 	jwtConfig.Subject = cfg.UserEmail
-
-	// Create HTTP client with the JWT config
 	client := jwtConfig.Client(ctx)
 
-	// Create and return Gmail service
 	service, err := gmail.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gmail service: %w", err)
 	}
 
 	return service, nil
+}
+
+// newOAuth2GmailService creates a Gmail service using OAuth2 client credentials
+// and a cached token.
+func newOAuth2GmailService(ctx context.Context, credJSON []byte) (*gmail.Service, error) {
+	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract OAuth2 client credentials: %w", err)
+	}
+
+	token, err := LoadToken()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("no OAuth2 token found. Run 'gsuite login' first to authenticate")
+		}
+		return nil, fmt.Errorf("failed to load OAuth2 token: %w", err)
+	}
+
+	oauthCfg := NewOAuth2Config(clientID, clientSecret)
+	return oauthCfg.NewGmailService(ctx, token)
 }
