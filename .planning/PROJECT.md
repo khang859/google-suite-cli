@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A Go CLI tool for full Gmail mailbox management with dual authentication — service account with domain-wide delegation for workspace environments, and OAuth2 browser-based login for personal Gmail accounts. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes.
+A Go CLI tool for full Gmail mailbox management via OAuth2 PKCE authentication. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes.
 
 ## Core Value
 
-Complete Gmail API coverage through a secure, scriptable command-line interface — every operation available, flexible auth options.
+Complete Gmail API coverage through a secure, scriptable command-line interface — every operation available, simple OAuth2 auth.
 
 ## Requirements
 
@@ -23,10 +23,13 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 - ✓ Token persistence with secure XDG-compatible storage — v1.1
 - ✓ Login/logout commands for OAuth2 flow management — v1.1
 - ✓ Device authorization flow for headless OAuth2 login (--no-browser) — v1.2
+- ✓ Simplified auth to OAuth2 PKCE-only (removed service account, device flow) — v2.0
+- ✓ Config-free auth API: `auth.NewGmailService(ctx)` with no struct — v2.0
+- ✓ Clean CLI with only `--verbose` and `--format` global flags — v2.0
 
 ### Active
 
-(None — all v1.0, v1.1, and v1.2 requirements shipped)
+(None — all v1.0–v2.0 requirements shipped)
 
 ### Out of Scope
 
@@ -36,15 +39,15 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 
 ## Context
 
-Shipped v1.2 with 3,455 LOC across 13 Go files.
-Tech stack: Go, Cobra CLI, Google Gmail API, JWT service account auth, OAuth2 PKCE, RFC 8628 device flow.
-55 commits over 2 days. 8 phases (15 plans) across 3 milestones complete.
-Triple auth paths: service accounts for workspace, OAuth2 browser for personal, device flow for headless.
+Shipped v2.0 with 3,028 LOC across 13 Go files.
+Tech stack: Go, Cobra CLI, Google Gmail API, OAuth2 PKCE.
+64 commits over 3 days. 10 phases (17 plans) across 4 milestones complete.
+Single auth path: OAuth2 PKCE browser flow only.
 
 ## Constraints
 
 - **Tech stack**: Go — single binary, good for CLI tools
-- **Auth**: Triple auth — service account (workspace), OAuth2 PKCE (personal), device flow (headless)
+- **Auth**: OAuth2 PKCE only — browser-based login, token stored in XDG config dir
 - **Security**: Credentials via env var (preferred) or file path; tokens stored with 0600 permissions
 
 ## Key Decisions
@@ -65,6 +68,8 @@ Triple auth paths: service accounts for workspace, OAuth2 browser for personal, 
 | auth.Login() encapsulates full flow | Clean CLI layer, single function call for entire auth sequence | ✓ Good |
 | Device flow output to stderr | Keep stdout scriptable, device prompts go to stderr | ✓ Good |
 | golang.org/x/oauth2 device flow | Built-in support, no custom implementation needed | ✓ Good |
+| Strip to OAuth2 PKCE-only | Simplicity over flexibility — one auth path reduces complexity | ✓ Good |
+| Remove Config struct entirely | No subcommand needs credentials — auth is internal to package | ✓ Good |
 
 ---
-*Last updated: 2026-02-06 after v1.2 milestone*
+*Last updated: 2026-02-07 after v2.0 milestone*

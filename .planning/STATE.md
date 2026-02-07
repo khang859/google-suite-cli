@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-06)
+See: .planning/PROJECT.md (updated 2026-02-07)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** v2.0 Auth Simplification — COMPLETE
+**Current focus:** All milestones complete (v1.0–v2.0 shipped)
 
 ## Current Position
 
 Phase: 10 of 10 (Simplify CLI)
-Plan: 1 of 1 in current phase
-Status: Phase complete — Milestone v2.0 complete
-Last activity: 2026-02-07 — Completed 10-01-PLAN.md
+Plan: All complete
+Status: v2.0 milestone shipped — all 4 milestones complete
+Last activity: 2026-02-07 — v2.0 Auth Simplification milestone archived
 
 Progress: ██████████ 100%
 
@@ -21,7 +21,7 @@ Progress: ██████████ 100%
 **Velocity:**
 - Total plans completed: 17
 - Average duration: ~3-4 min/plan (parallel execution)
-- Total project time: ~2 days wall clock
+- Total project time: ~3 days wall clock
 
 **By Phase:**
 
@@ -66,5 +66,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 10-01-PLAN.md (Phase 10 complete, Milestone v2.0 complete)
+Stopped at: v2.0 milestone archived — all milestones complete
 Resume file: None

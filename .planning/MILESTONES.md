@@ -1,5 +1,31 @@
 # Project Milestones: Google Suite CLI
 
+## v2.0 Auth Simplification (Shipped: 2026-02-07)
+
+**Delivered:** Stripped CLI to OAuth2 PKCE-only authentication — removed service account JWT, device flow, Config struct, and legacy flags. Net -60 lines, single auth path via `auth.NewGmailService(ctx)`.
+
+**Phases completed:** 9-10 (2 plans total)
+
+**Key accomplishments:**
+- Removed all service account JWT auth, device flow, and credential type dispatching
+- Simplified auth to single-path OAuth2 PKCE (no credential type detection)
+- Removed Config struct entirely — `auth.NewGmailService(ctx)` with no config
+- Removed `--credentials-file` and `--user` legacy flags from CLI
+- Updated all 8 subcommands to simplified auth API
+
+**Stats:**
+- 17 files changed, 513 insertions, 573 deletions (net -60 lines)
+- 3,028 lines of Go (total project)
+- 2 phases, 2 plans, 5 tasks
+- 1 day (2026-02-07)
+- 9 commits
+
+**Git range:** `7181d49` → `d7cc85e`
+
+**What's next:** TBD — project complete with full Gmail CLI and clean OAuth2-only auth.
+
+---
+
 ## v1.2 Headless Login (Shipped: 2026-02-06)
 
 **Delivered:** RFC 8628 device authorization flow for OAuth2 login on headless machines — `gsuite login --no-browser` prints a verification URL and code to stderr for cross-device authentication.
