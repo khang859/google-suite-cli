@@ -11,35 +11,9 @@ import (
 	"google.golang.org/api/gmail/v1"
 )
 
-// Config holds the authentication configuration.
-type Config struct {
-	// CredentialsFile is the path to the OAuth2 client credentials JSON file.
-	CredentialsFile string
-	// CredentialsJSON is the raw JSON content of OAuth2 client credentials.
-	CredentialsJSON []byte
-	// UserEmail is deprecated and ignored. Kept for Phase 10 CLI flag cleanup.
-	UserEmail string
-}
-
-// LoadCredentials loads credentials JSON from various sources.
-// Priority order:
-// 1. cfg.CredentialsJSON if set
-// 2. cfg.CredentialsFile if set
-// 3. GOOGLE_CREDENTIALS env var (JSON content)
-// 4. GOOGLE_APPLICATION_CREDENTIALS env var (file path)
-func LoadCredentials(cfg Config) ([]byte, error) {
-	if len(cfg.CredentialsJSON) > 0 {
-		return cfg.CredentialsJSON, nil
-	}
-
-	if cfg.CredentialsFile != "" {
-		data, err := os.ReadFile(cfg.CredentialsFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read credentials file %s: %w", cfg.CredentialsFile, err)
-		}
-		return data, nil
-	}
-
+// LoadCredentials loads OAuth2 client credentials JSON from environment variables.
+// Priority: GOOGLE_CREDENTIALS (raw JSON) then GOOGLE_APPLICATION_CREDENTIALS (file path).
+func LoadCredentials() ([]byte, error) {
 	if jsonContent := os.Getenv("GOOGLE_CREDENTIALS"); jsonContent != "" {
 		return []byte(jsonContent), nil
 	}
@@ -52,7 +26,7 @@ func LoadCredentials(cfg Config) ([]byte, error) {
 		return data, nil
 	}
 
-	return nil, fmt.Errorf("no credentials found: set --credentials-file flag, GOOGLE_CREDENTIALS env var (JSON), or GOOGLE_APPLICATION_CREDENTIALS env var (file path)")
+	return nil, fmt.Errorf("no OAuth2 client credentials found: set GOOGLE_CREDENTIALS env var (JSON) or GOOGLE_APPLICATION_CREDENTIALS env var (file path)")
 }
 
 // extractOAuth2ClientCreds extracts the client_id and client_secret from
@@ -120,8 +94,8 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 
 // NewGmailService creates an authenticated Gmail service using OAuth2 client
 // credentials and a cached token from a prior login.
-func NewGmailService(ctx context.Context, cfg Config) (*gmail.Service, error) {
-	credJSON, err := LoadCredentials(cfg)
+func NewGmailService(ctx context.Context) (*gmail.Service, error) {
+	credJSON, err := LoadCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
