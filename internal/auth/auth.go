@@ -1,5 +1,4 @@
-// Package auth provides authentication functionality for Google APIs
-// using service accounts or OAuth2 client credentials.
+// Package auth provides OAuth2 PKCE authentication for Google Gmail API.
 package auth
 
 import (
@@ -9,27 +8,16 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
-	"google.golang.org/api/option"
-)
-
-// credentialType represents the type of Google credentials JSON.
-type credentialType int
-
-const (
-	credServiceAccount credentialType = iota
-	credOAuth2Client
 )
 
 // Config holds the authentication configuration.
 type Config struct {
-	// CredentialsFile is the path to the service account JSON file.
+	// CredentialsFile is the path to the OAuth2 client credentials JSON file.
 	CredentialsFile string
-	// CredentialsJSON is the raw JSON content of service account credentials.
+	// CredentialsJSON is the raw JSON content of OAuth2 client credentials.
 	CredentialsJSON []byte
-	// UserEmail is the email of the user to impersonate (required for domain-wide delegation).
+	// UserEmail is deprecated and ignored. Kept for Phase 10 CLI flag cleanup.
 	UserEmail string
 }
 
@@ -40,12 +28,10 @@ type Config struct {
 // 3. GOOGLE_CREDENTIALS env var (JSON content)
 // 4. GOOGLE_APPLICATION_CREDENTIALS env var (file path)
 func LoadCredentials(cfg Config) ([]byte, error) {
-	// Option 1: Direct JSON content from config
 	if len(cfg.CredentialsJSON) > 0 {
 		return cfg.CredentialsJSON, nil
 	}
 
-	// Option 2: File path from config
 	if cfg.CredentialsFile != "" {
 		data, err := os.ReadFile(cfg.CredentialsFile)
 		if err != nil {
@@ -54,12 +40,10 @@ func LoadCredentials(cfg Config) ([]byte, error) {
 		return data, nil
 	}
 
-	// Option 3: GOOGLE_CREDENTIALS env var (JSON content)
 	if jsonContent := os.Getenv("GOOGLE_CREDENTIALS"); jsonContent != "" {
 		return []byte(jsonContent), nil
 	}
 
-	// Option 4: GOOGLE_APPLICATION_CREDENTIALS env var (file path)
 	if filePath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); filePath != "" {
 		data, err := os.ReadFile(filePath)
 		if err != nil {
@@ -69,30 +53,6 @@ func LoadCredentials(cfg Config) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("no credentials found: set --credentials-file flag, GOOGLE_CREDENTIALS env var (JSON), or GOOGLE_APPLICATION_CREDENTIALS env var (file path)")
-}
-
-// detectCredentialType parses the JSON and determines whether it represents
-// service account credentials or OAuth2 client credentials.
-func detectCredentialType(jsonData []byte) (credentialType, error) {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(jsonData, &raw); err != nil {
-		return 0, fmt.Errorf("failed to parse credentials JSON: %w", err)
-	}
-
-	// Service account JSON has "type": "service_account"
-	if t, ok := raw["type"].(string); ok && t == "service_account" {
-		return credServiceAccount, nil
-	}
-
-	// OAuth2 client credentials JSON has "installed" or "web" key
-	if _, ok := raw["installed"]; ok {
-		return credOAuth2Client, nil
-	}
-	if _, ok := raw["web"]; ok {
-		return credOAuth2Client, nil
-	}
-
-	return 0, fmt.Errorf("unrecognized credentials format: expected service account JSON (with \"type\": \"service_account\"), or OAuth2 client JSON (with \"installed\" or \"web\" key)")
 }
 
 // extractOAuth2ClientCreds extracts the client_id and client_secret from
@@ -127,45 +87,24 @@ func extractOAuth2ClientCreds(jsonData []byte) (clientID, clientSecret string, e
 	return creds.ClientID, creds.ClientSecret, nil
 }
 
-// Login performs the OAuth2 login flow. It validates that the credentials are
-// OAuth2 client credentials (not service account), runs the appropriate
-// authorization flow, saves the token, and returns the authenticated user's
-// email address. When noBrowser is true, it uses the RFC 8628 device
-// authorization flow instead of the browser-based PKCE flow.
-func Login(ctx context.Context, credJSON []byte, noBrowser bool) (string, error) {
-	// Verify credential type is OAuth2
-	credType, err := detectCredentialType(credJSON)
-	if err != nil {
-		return "", err
-	}
-	if credType == credServiceAccount {
-		return "", fmt.Errorf("login is only for OAuth2 client credentials; service accounts authenticate automatically")
-	}
-
-	// Extract client credentials
+// Login performs the OAuth2 PKCE browser login flow, saves the token, and
+// returns the authenticated user's email address.
+func Login(ctx context.Context, credJSON []byte) (string, error) {
 	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract OAuth2 client credentials: %w", err)
 	}
 
-	// Run appropriate OAuth2 flow
 	oauthCfg := NewOAuth2Config(clientID, clientSecret)
-	var token *oauth2.Token
-	if noBrowser {
-		token, err = oauthCfg.DeviceAuthenticate(ctx)
-	} else {
-		token, err = oauthCfg.Authenticate(ctx)
-	}
+	token, err := oauthCfg.Authenticate(ctx)
 	if err != nil {
 		return "", fmt.Errorf("authentication failed: %w", err)
 	}
 
-	// Save token
 	if err := SaveToken(token); err != nil {
 		return "", fmt.Errorf("failed to save token: %w", err)
 	}
 
-	// Create a temporary Gmail service to get the user's email
 	service, err := oauthCfg.NewGmailService(ctx, token)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Gmail service: %w", err)
@@ -179,62 +118,17 @@ func Login(ctx context.Context, credJSON []byte, noBrowser bool) (string, error)
 	return profile.EmailAddress, nil
 }
 
-// NewGmailService creates an authenticated Gmail service. It auto-detects the
-// credential type from the JSON and dispatches to the appropriate auth flow:
-//   - Service account: uses domain-wide delegation (requires cfg.UserEmail)
-//   - OAuth2 client: uses cached token from ~/.config/gsuite/token.json
+// NewGmailService creates an authenticated Gmail service using OAuth2 client
+// credentials and a cached token from a prior login.
 func NewGmailService(ctx context.Context, cfg Config) (*gmail.Service, error) {
-	// Load credentials
 	credJSON, err := LoadCredentials(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
 
-	// Detect credential type
-	credType, err := detectCredentialType(credJSON)
-	if err != nil {
-		return nil, err
-	}
-
-	switch credType {
-	case credServiceAccount:
-		return newServiceAccountGmailService(ctx, cfg, credJSON)
-	case credOAuth2Client:
-		return newOAuth2GmailService(ctx, credJSON)
-	default:
-		return nil, fmt.Errorf("unsupported credential type")
-	}
-}
-
-// newServiceAccountGmailService creates a Gmail service using service account
-// credentials with domain-wide delegation.
-func newServiceAccountGmailService(ctx context.Context, cfg Config, credJSON []byte) (*gmail.Service, error) {
-	if cfg.UserEmail == "" {
-		return nil, fmt.Errorf("user email is required for service account authentication: set --user flag")
-	}
-
-	jwtConfig, err := google.JWTConfigFromJSON(credJSON, gmail.GmailModifyScope)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse service account credentials: %w", err)
-	}
-
-	jwtConfig.Subject = cfg.UserEmail
-	client := jwtConfig.Client(ctx)
-
-	service, err := gmail.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Gmail service: %w", err)
-	}
-
-	return service, nil
-}
-
-// newOAuth2GmailService creates a Gmail service using OAuth2 client credentials
-// and a cached token.
-func newOAuth2GmailService(ctx context.Context, credJSON []byte) (*gmail.Service, error) {
 	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract OAuth2 client credentials: %w", err)
+		return nil, err
 	}
 
 	token, err := LoadToken()
