@@ -13,13 +13,14 @@ None
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
 - ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
 - ✅ **v1.2 Headless Login** — Phase 8 (shipped 2026-02-06)
-- 🚧 **v2.0 Auth Simplification** — Phases 9-10 (in progress)
+- ✅ **v2.0 Auth Simplification** — Phases 9-10 (shipped 2026-02-07)
 
 ## Completed Milestones
 
 - ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) (Phases 1-4) — SHIPPED 2026-02-05
 - ✅ [v1.1 OAuth2 Support](milestones/v1.1-ROADMAP.md) (Phases 5-7) — SHIPPED 2026-02-06
 - ✅ [v1.2 Headless Login](milestones/v1.2-ROADMAP.md) (Phase 8) — SHIPPED 2026-02-06
+- ✅ [v2.0 Auth Simplification](milestones/v2.0-ROADMAP.md) (Phases 9-10) — SHIPPED 2026-02-07
 
 ## Phases
 
@@ -49,28 +50,13 @@ None
 
 </details>
 
-### 🚧 v2.0 Auth Simplification (In Progress)
+<details>
+<summary>✅ v2.0 Auth Simplification (Phases 9-10) — SHIPPED 2026-02-07</summary>
 
-**Milestone Goal:** Strip auth down to OAuth2 PKCE only — remove service account and device flow code, simplify CLI flags
+- [x] Phase 9: Remove Auth Code (1/1 plan) — completed 2026-02-07
+- [x] Phase 10: Simplify CLI (1/1 plan) — completed 2026-02-07
 
-#### Phase 9: Remove Auth Code — Complete
-
-**Goal**: Strip service account JWT auth and device flow code from internal/auth, clean up login command
-**Depends on**: Previous milestone complete
-**Completed**: 2026-02-07
-
-Plans:
-- [x] 09-01: Strip auth to OAuth2-only — completed 2026-02-07
-
-#### Phase 10: Simplify CLI
-
-**Goal**: Remove --credentials-file and --user flags, update all subcommands, add clear error messages for missing login
-**Depends on**: Phase 9
-**Research**: Unlikely (internal cleanup, simplifying flags)
-**Plans**: TBD
-
-Plans:
-- [ ] 10-01: TBD (run /gsd:plan-phase 10 to break down)
+</details>
 
 ## Progress
 
@@ -85,4 +71,4 @@ Plans:
 | 7. CLI Integration | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
 | 9. Remove Auth Code | v2.0 | 1/1 | Complete | 2026-02-07 |
-| 10. Simplify CLI | v2.0 | 0/? | Not started | - |
+| 10. Simplify CLI | v2.0 | 1/1 | Complete | 2026-02-07 |
