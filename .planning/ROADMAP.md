@@ -53,15 +53,14 @@ None
 
 **Milestone Goal:** Strip auth down to OAuth2 PKCE only — remove service account and device flow code, simplify CLI flags
 
-#### Phase 9: Remove Auth Code
+#### Phase 9: Remove Auth Code — Complete
 
 **Goal**: Strip service account JWT auth and device flow code from internal/auth, clean up login command
 **Depends on**: Previous milestone complete
-**Research**: Unlikely (internal cleanup, removing existing code)
-**Plans**: TBD
+**Completed**: 2026-02-07
 
 Plans:
-- [ ] 09-01: TBD (run /gsd:plan-phase 9 to break down)
+- [x] 09-01: Strip auth to OAuth2-only — completed 2026-02-07
 
 #### Phase 10: Simplify CLI
 
@@ -85,5 +84,5 @@ Plans:
 | 6. Auth Dispatcher | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 7. CLI Integration | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
-| 9. Remove Auth Code | v2.0 | 0/? | Not started | - |
+| 9. Remove Auth Code | v2.0 | 1/1 | Complete | 2026-02-07 |
 | 10. Simplify CLI | v2.0 | 0/? | Not started | - |
