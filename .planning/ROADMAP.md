@@ -13,6 +13,7 @@ None
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-05)
 - ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
 - ✅ **v1.2 Headless Login** — Phase 8 (shipped 2026-02-06)
+- 🚧 **v2.0 Auth Simplification** — Phases 9-10 (in progress)
 
 ## Completed Milestones
 
@@ -48,6 +49,30 @@ None
 
 </details>
 
+### 🚧 v2.0 Auth Simplification (In Progress)
+
+**Milestone Goal:** Strip auth down to OAuth2 PKCE only — remove service account and device flow code, simplify CLI flags
+
+#### Phase 9: Remove Auth Code
+
+**Goal**: Strip service account JWT auth and device flow code from internal/auth, clean up login command
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (internal cleanup, removing existing code)
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: TBD (run /gsd:plan-phase 9 to break down)
+
+#### Phase 10: Simplify CLI
+
+**Goal**: Remove --credentials-file and --user flags, update all subcommands, add clear error messages for missing login
+**Depends on**: Phase 9
+**Research**: Unlikely (internal cleanup, simplifying flags)
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD (run /gsd:plan-phase 10 to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -60,3 +85,5 @@ None
 | 6. Auth Dispatcher | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 7. CLI Integration | v1.1 | 1/1 | Complete | 2026-02-06 |
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
+| 9. Remove Auth Code | v2.0 | 0/? | Not started | - |
+| 10. Simplify CLI | v2.0 | 0/? | Not started | - |

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** Planning next milestone
+**Current focus:** v2.0 Auth Simplification — strip to OAuth2 PKCE only
 
 ## Current Position
 
-Phase: 8 of 8 (all phases complete)
-Plan: All complete
-Status: Ready to plan next milestone
-Last activity: 2026-02-06 — v1.2 milestone complete
+Phase: 9 of 10 (Remove Auth Code)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-06 — Milestone v2.0 created
 
-Progress: ██████████ 100% (3 milestones shipped)
+Progress: ░░░░░░░░░░ 0%
 
 ## Performance Metrics
 
@@ -55,9 +55,10 @@ None.
 - Milestone v1.0 created and shipped: Full Gmail CLI with API coverage
 - Milestone v1.1 created and shipped: OAuth2 browser-based login for personal Gmail
 - Milestone v1.2 created and shipped: Headless device auth flow for EC2/SSH login
+- Milestone v2.0 created: Auth simplification — strip to OAuth2 PKCE only, 2 phases (Phase 9-10)
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Milestone v1.2 archived
+Stopped at: Milestone v2.0 initialization
 Resume file: None
