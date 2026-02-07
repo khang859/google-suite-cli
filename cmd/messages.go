@@ -150,25 +150,10 @@ func init() {
 }
 
 func runMessagesList(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -257,25 +242,10 @@ func runMessagesList(cmd *cobra.Command, args []string) error {
 func runMessagesGet(cmd *cobra.Command, args []string) error {
 	messageID := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -431,25 +401,10 @@ func runMessagesModify(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one of --add-labels or --remove-labels required")
 	}
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -548,25 +503,10 @@ func runMessagesGetAttachment(cmd *cobra.Command, args []string) error {
 	messageID := args[0]
 	attachmentID := args[1]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 

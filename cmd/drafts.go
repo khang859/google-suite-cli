@@ -171,25 +171,10 @@ func init() {
 }
 
 func runDraftsList(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -308,25 +293,10 @@ func runDraftsList(cmd *cobra.Command, args []string) error {
 func runDraftsGet(cmd *cobra.Command, args []string) error {
 	draftID := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -442,25 +412,10 @@ func decodeDraftBase64URL(encoded string) string {
 }
 
 func runDraftsCreate(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -505,30 +460,14 @@ func runDraftsCreate(cmd *cobra.Command, args []string) error {
 func runDraftsUpdate(cmd *cobra.Command, args []string) error {
 	draftID := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Check if at least one field is provided
 	if draftTo == "" && draftSubject == "" && draftBody == "" && draftCc == "" && draftBcc == "" {
 		return fmt.Errorf("at least one of --to, --subject, --body, --cc, or --bcc is required")
 	}
 
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -621,25 +560,10 @@ func runDraftsUpdate(cmd *cobra.Command, args []string) error {
 func runDraftsSend(cmd *cobra.Command, args []string) error {
 	draftID := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -670,25 +594,10 @@ func runDraftsSend(cmd *cobra.Command, args []string) error {
 func runDraftsDelete(cmd *cobra.Command, args []string) error {
 	draftID := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 

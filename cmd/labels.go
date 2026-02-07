@@ -142,25 +142,10 @@ func init() {
 }
 
 func runLabelsList(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -229,30 +214,14 @@ func runLabelsList(cmd *cobra.Command, args []string) error {
 }
 
 func runLabelsCreate(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Validate name is provided
 	if labelName == "" {
 		return fmt.Errorf("--name flag is required")
 	}
 
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -303,30 +272,14 @@ func runLabelsUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot modify system label: %s", labelID)
 	}
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Check if at least one update flag is provided
 	if labelName == "" && labelListVisibility == "" && messageListVisibility == "" {
 		return fmt.Errorf("at least one of --name, --label-list-visibility, or --message-list-visibility is required")
 	}
 
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -389,25 +342,10 @@ func runLabelsDelete(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot delete system label: %s", labelID)
 	}
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 

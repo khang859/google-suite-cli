@@ -12,12 +12,9 @@ import (
 var whoamiCmd = &cobra.Command{
 	Use:   "whoami",
 	Short: "Show authenticated user's Gmail profile",
-	Long: `Show the Gmail profile of the authenticated user.
+	Long: `Show the Gmail profile of the logged-in user.
 
-This command uses the Gmail API to retrieve profile information for the
-user being impersonated via domain-wide delegation. It displays the email
-address and message/thread counts.
-
+Displays the email address and message/thread counts.
 This is useful for verifying that authentication is working correctly.`,
 	RunE: runWhoami,
 }
@@ -27,26 +24,10 @@ func init() {
 }
 
 func runWhoami(cmd *cobra.Command, args []string) error {
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		// Check if it's a credentials error
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 

@@ -19,13 +19,10 @@ This command opens your browser to complete the Google OAuth2 consent flow
 using PKCE for security. After authentication, a token is saved locally so
 subsequent commands work without needing to log in again.
 
-Requires OAuth2 client credentials. Provide credentials via --credentials-file
-flag or GOOGLE_CREDENTIALS / GOOGLE_APPLICATION_CREDENTIALS environment variables.`,
-	Example: `  # Login with default credentials (opens browser)
-  gsuite login
-
-  # Login with a specific credentials file
-  gsuite login -c /path/to/oauth2-client.json`,
+Requires OAuth2 client credentials via GOOGLE_CREDENTIALS env var (raw JSON)
+or GOOGLE_APPLICATION_CREDENTIALS env var (file path).`,
+	Example: `  # Login (opens browser)
+  gsuite login`,
 	RunE: runLogin,
 }
 
@@ -46,13 +43,7 @@ func init() {
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
-	credFile := GetCredentialsFile()
-
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-	}
-
-	credJSON, err := auth.LoadCredentials(cfg)
+	credJSON, err := auth.LoadCredentials()
 	if err != nil {
 		return fmt.Errorf("no credentials found: %w", err)
 	}

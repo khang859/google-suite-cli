@@ -44,30 +44,14 @@ func init() {
 func runSearch(cmd *cobra.Command, args []string) error {
 	query := args[0]
 
-	// Get credentials file and user email from root flags
-	credFile := GetCredentialsFile()
-	user := GetUserEmail()
-
-	// Validate max-results
 	if searchMaxResults < 1 || searchMaxResults > 500 {
 		return fmt.Errorf("--max-results must be between 1 and 500")
 	}
 
-	// Create auth config
-	cfg := auth.Config{
-		CredentialsFile: credFile,
-		UserEmail:       user,
-	}
-
-	// Create context
 	ctx := context.Background()
 
-	// Create Gmail service
-	service, err := auth.NewGmailService(ctx, cfg)
+	service, err := auth.NewGmailService(ctx)
 	if err != nil {
-		if credFile == "" {
-			return fmt.Errorf("no credentials provided. Use --credentials-file or set GOOGLE_CREDENTIALS env var")
-		}
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
