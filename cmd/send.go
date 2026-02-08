@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"html"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -14,6 +15,9 @@ import (
 
 	"github.com/khang/google-suite-cli/internal/auth"
 	"github.com/spf13/cobra"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	gmhtml "github.com/yuin/goldmark/renderer/html"
 	"google.golang.org/api/gmail/v1"
 )
 
@@ -31,24 +35,27 @@ var (
 var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Send an email message",
-	Long: `Send a plain text email message via Gmail.
+	Long: `Send an email message via Gmail.
 
 Composes and sends an email with the specified recipient, subject, and body.
+The body is sent as both plain text and HTML for best rendering across clients.
+The body supports markdown formatting (bold, italic, links, lists, code, etc.)
+which is rendered as HTML for recipients. Use \n in the body for line breaks.
 Optionally include CC and BCC recipients. Supports file attachments via --attach.`,
 	Example: `  # Send a simple email
   gsuite send --to "recipient@example.com" --subject "Hello" --body "Message content"
 
-  # Send with short flags
-  gsuite send -t "user@domain.com" -s "Test" -b "Body text"
+  # Send with line breaks
+  gsuite send -t "user@domain.com" -s "Test" -b "Hi,\n\nHow are you?\nBest regards"
+
+  # Send with markdown formatting
+  gsuite send -t "user@domain.com" -s "Update" -b "**Important:** Please review the *attached* report.\n\n- Item one\n- Item two\n\nVisit [our site](https://example.com)"
 
   # Send with CC and BCC
   gsuite send -t "recipient@example.com" -s "Meeting" -b "See you there" --cc "cc@example.com" --bcc "bcc@example.com"
 
-  # Send to multiple CC recipients
-  gsuite send -t "main@example.com" -s "Update" -b "Content" --cc "one@example.com,two@example.com"
-
   # Send with file attachments
-  gsuite send -t "user@domain.com" -s "Report" -b "See attached." --attach report.pdf --attach data.csv`,
+  gsuite send -t "user@domain.com" -s "Report" -b "See attached.\n\nThanks" --attach report.pdf --attach data.csv`,
 	RunE: runSend,
 }
 
@@ -58,7 +65,7 @@ func init() {
 	// Required flags
 	sendCmd.Flags().StringVarP(&sendTo, "to", "t", "", "Recipient email address (required)")
 	sendCmd.Flags().StringVarP(&sendSubject, "subject", "s", "", "Email subject (required)")
-	sendCmd.Flags().StringVarP(&sendBody, "body", "b", "", "Plain text body content (required)")
+	sendCmd.Flags().StringVarP(&sendBody, "body", "b", "", "Body content with markdown support (required)")
 
 	// Mark required flags
 	sendCmd.MarkFlagRequired("to")
@@ -86,19 +93,19 @@ func runSend(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	var encodedMessage string
+	body := interpretEscapes(sendBody)
+
+	var rawMessage []byte
+	var buildErr error
 	if len(sendAttach) > 0 {
-		// Build MIME multipart message with attachments
-		mimeMessage, err := buildMultipartMessage(sendTo, sendSubject, sendBody, sendCc, sendBcc, sendAttach)
-		if err != nil {
-			return fmt.Errorf("failed to build message with attachments: %w", err)
-		}
-		encodedMessage = base64.URLEncoding.EncodeToString(mimeMessage)
+		rawMessage, buildErr = buildMultipartMessage(sendTo, sendSubject, body, sendCc, sendBcc, sendAttach)
 	} else {
-		// Build simple RFC 2822 formatted message (no attachments)
-		message := buildSendRFC2822Message(sendTo, sendSubject, sendBody, sendCc, sendBcc)
-		encodedMessage = base64.URLEncoding.EncodeToString([]byte(message))
+		rawMessage, buildErr = buildSendRFC2822Message(sendTo, sendSubject, body, sendCc, sendBcc)
 	}
+	if buildErr != nil {
+		return fmt.Errorf("failed to build message: %w", buildErr)
+	}
+	encodedMessage := base64.URLEncoding.EncodeToString(rawMessage)
 
 	// Create the Gmail message object
 	gmailMessage := &gmail.Message{
@@ -125,42 +132,40 @@ func runSend(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// buildSendRFC2822Message constructs an RFC 2822 formatted email message for sending.
-func buildSendRFC2822Message(to, subject, body, cc, bcc string) string {
-	var builder strings.Builder
+// buildSendRFC2822Message constructs an RFC 2822 message with multipart/alternative body.
+func buildSendRFC2822Message(to, subject, body, cc, bcc string) ([]byte, error) {
+	altBody, boundary, err := buildAlternativeBody(body)
+	if err != nil {
+		return nil, err
+	}
 
-	// Write headers
-	builder.WriteString(fmt.Sprintf("To: %s\r\n", to))
-
+	var header bytes.Buffer
+	header.WriteString(fmt.Sprintf("To: %s\r\n", to))
 	if cc != "" {
-		builder.WriteString(fmt.Sprintf("Cc: %s\r\n", cc))
+		header.WriteString(fmt.Sprintf("Cc: %s\r\n", cc))
 	}
-
 	if bcc != "" {
-		builder.WriteString(fmt.Sprintf("Bcc: %s\r\n", bcc))
+		header.WriteString(fmt.Sprintf("Bcc: %s\r\n", bcc))
 	}
+	header.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	header.WriteString("MIME-Version: 1.0\r\n")
+	header.WriteString(fmt.Sprintf("Content-Type: multipart/alternative; boundary=%s\r\n", boundary))
+	header.WriteString("\r\n")
 
-	builder.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
-	builder.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
+	var result bytes.Buffer
+	result.Write(header.Bytes())
+	result.Write(altBody)
 
-	// Empty line separates headers from body
-	builder.WriteString("\r\n")
-
-	// Write body
-	builder.WriteString(body)
-
-	return builder.String()
+	return result.Bytes(), nil
 }
 
-// buildMultipartMessage constructs a MIME multipart message with file attachments.
+// buildMultipartMessage constructs a MIME multipart/mixed message with
+// a multipart/alternative body (text + HTML) and file attachments.
 func buildMultipartMessage(to, subject, body, cc, bcc string, attachPaths []string) ([]byte, error) {
 	var buf bytes.Buffer
-
-	// Create multipart writer
-	writer := multipart.NewWriter(&buf)
+	mixedWriter := multipart.NewWriter(&buf)
 
 	// Write top-level headers
-	buf.Reset() // Reset to write headers before multipart content
 	var headerBuf bytes.Buffer
 	headerBuf.WriteString(fmt.Sprintf("To: %s\r\n", to))
 	if cc != "" {
@@ -171,18 +176,23 @@ func buildMultipartMessage(to, subject, body, cc, bcc string, attachPaths []stri
 	}
 	headerBuf.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	headerBuf.WriteString("MIME-Version: 1.0\r\n")
-	headerBuf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n", writer.Boundary()))
+	headerBuf.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n", mixedWriter.Boundary()))
 	headerBuf.WriteString("\r\n")
 
-	// Write the text body part
-	textHeader := make(textproto.MIMEHeader)
-	textHeader.Set("Content-Type", "text/plain; charset=UTF-8")
-	textPart, err := writer.CreatePart(textHeader)
+	// Nest multipart/alternative as the first part of multipart/mixed
+	altBody, altBoundary, err := buildAlternativeBody(body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create text part: %w", err)
+		return nil, err
 	}
-	if _, err := textPart.Write([]byte(body)); err != nil {
-		return nil, fmt.Errorf("failed to write body: %w", err)
+
+	altHeader := make(textproto.MIMEHeader)
+	altHeader.Set("Content-Type", fmt.Sprintf("multipart/alternative; boundary=%s", altBoundary))
+	altPart, err := mixedWriter.CreatePart(altHeader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create alternative part: %w", err)
+	}
+	if _, err := altPart.Write(altBody); err != nil {
+		return nil, fmt.Errorf("failed to write alternative body: %w", err)
 	}
 
 	// Write attachment parts
@@ -192,26 +202,23 @@ func buildMultipartMessage(to, subject, body, cc, bcc string, attachPaths []stri
 			return nil, fmt.Errorf("failed to read attachment %s: %w", attachPath, err)
 		}
 
-		// Detect MIME type from file content
 		sniffLen := 512
 		if len(fileData) < sniffLen {
 			sniffLen = len(fileData)
 		}
 		mimeType := http.DetectContentType(fileData[:sniffLen])
 
-		// Create attachment part
 		basename := filepath.Base(attachPath)
 		attachHeader := make(textproto.MIMEHeader)
 		attachHeader.Set("Content-Type", mimeType)
 		attachHeader.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", basename))
 		attachHeader.Set("Content-Transfer-Encoding", "base64")
 
-		attachPart, err := writer.CreatePart(attachHeader)
+		attachPart, err := mixedWriter.CreatePart(attachHeader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create attachment part: %w", err)
 		}
 
-		// Base64 encode and write with line wrapping at 76 chars
 		encoded := base64.StdEncoding.EncodeToString(fileData)
 		for i := 0; i < len(encoded); i += 76 {
 			end := i + 76
@@ -224,15 +231,92 @@ func buildMultipartMessage(to, subject, body, cc, bcc string, attachPaths []stri
 		}
 	}
 
-	// Close the multipart writer
-	if err := writer.Close(); err != nil {
+	if err := mixedWriter.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
 	}
 
-	// Combine headers and multipart body
 	var result bytes.Buffer
 	result.Write(headerBuf.Bytes())
 	result.Write(buf.Bytes())
 
 	return result.Bytes(), nil
+}
+
+// interpretEscapes converts literal \n, \t, and \\ sequences to their real characters.
+// Bash double-quoted strings don't interpret \n, so users typing --body "Hello\nWorld"
+// get literal backslash-n. This function fixes that.
+func interpretEscapes(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case 'n':
+				b.WriteByte('\n')
+				i++
+			case 't':
+				b.WriteByte('\t')
+				i++
+			case '\\':
+				b.WriteByte('\\')
+				i++
+			default:
+				b.WriteByte(s[i])
+			}
+		} else {
+			b.WriteByte(s[i])
+		}
+	}
+
+	return b.String()
+}
+
+// plainTextToHTML renders markdown-formatted text into an HTML document.
+// Supports GFM extensions: bold, italic, strikethrough, links, lists, code, tables.
+func plainTextToHTML(text string) string {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithRendererOptions(gmhtml.WithHardWraps()),
+	)
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(text), &buf); err != nil {
+		escaped := html.EscapeString(text)
+		return "<!DOCTYPE html><html><body>" + strings.ReplaceAll(escaped, "\n", "<br>\n") + "</body></html>"
+	}
+	return "<!DOCTYPE html><html><body>" + buf.String() + "</body></html>"
+}
+
+// buildAlternativeBody returns the raw bytes and boundary of a multipart/alternative
+// containing text/plain and text/html parts.
+func buildAlternativeBody(body string) ([]byte, string, error) {
+	var buf bytes.Buffer
+	altWriter := multipart.NewWriter(&buf)
+
+	plainHeader := make(textproto.MIMEHeader)
+	plainHeader.Set("Content-Type", "text/plain; charset=UTF-8")
+	plainPart, err := altWriter.CreatePart(plainHeader)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create text/plain part: %w", err)
+	}
+	if _, err := plainPart.Write([]byte(body)); err != nil {
+		return nil, "", fmt.Errorf("failed to write text/plain body: %w", err)
+	}
+
+	htmlHeader := make(textproto.MIMEHeader)
+	htmlHeader.Set("Content-Type", "text/html; charset=UTF-8")
+	htmlPart, err := altWriter.CreatePart(htmlHeader)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create text/html part: %w", err)
+	}
+	if _, err := htmlPart.Write([]byte(plainTextToHTML(body))); err != nil {
+		return nil, "", fmt.Errorf("failed to write text/html body: %w", err)
+	}
+
+	boundary := altWriter.Boundary()
+	if err := altWriter.Close(); err != nil {
+		return nil, "", fmt.Errorf("failed to close alternative writer: %w", err)
+	}
+
+	return buf.Bytes(), boundary, nil
 }
