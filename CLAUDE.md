@@ -63,3 +63,8 @@ Pushing a version tag triggers `.github/workflows/release.yml` which runs GoRele
 ```bash
 git tag v1.x.x && git push origin v1.x.x
 ```
+
+## Important rules to follows
+
+- Code comments should explain WHY, its pointless to have comments explaining code, code should be self documented.
+- Avoid large files/functions
