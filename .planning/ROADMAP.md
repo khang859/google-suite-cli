@@ -61,7 +61,7 @@ None
 
 ### v3.0 Multi-Account Support (Phase 11)
 
-- [ ] Phase 11: Multi-Account Support (1/4 plans) — in progress
+- [ ] Phase 11: Multi-Account Support (2/4 plans) — in progress
 
 ## Progress
 
@@ -77,4 +77,4 @@ None
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
 | 9. Remove Auth Code | v2.0 | 1/1 | Complete | 2026-02-07 |
 | 10. Simplify CLI | v2.0 | 1/1 | Complete | 2026-02-07 |
-| 11. Multi-Account Support | v3.0 | 1/4 | In progress | — |
+| 11. Multi-Account Support | v3.0 | 2/4 | In progress | — |
