@@ -104,9 +104,10 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 	return email, nil
 }
 
-// NewGmailService creates an authenticated Gmail service using OAuth2 client
-// credentials and a cached token from a prior login.
-func NewGmailService(ctx context.Context) (*gmail.Service, error) {
+// NewGmailService creates an authenticated Gmail service for the given account.
+// If account is empty, the active account from AccountStore is used.
+// Runs EnsureMigrated to transparently upgrade legacy single-token setups.
+func NewGmailService(ctx context.Context, account string) (*gmail.Service, error) {
 	credJSON, err := LoadCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %w", err)
@@ -117,12 +118,28 @@ func NewGmailService(ctx context.Context) (*gmail.Service, error) {
 		return nil, err
 	}
 
-	token, err := LoadLegacyToken()
+	if err := EnsureMigrated(ctx); err != nil {
+		return nil, fmt.Errorf("failed to run migration: %w", err)
+	}
+
+	resolvedEmail := account
+	if resolvedEmail == "" {
+		store, err := LoadAccountStore()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load account store: %w", err)
+		}
+		resolvedEmail, err = store.GetActive()
+		if err != nil {
+			return nil, fmt.Errorf("no authenticated accounts. Run 'gsuite login' first")
+		}
+	}
+
+	token, err := LoadTokenFor(resolvedEmail)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("no OAuth2 token found. Run 'gsuite login' first to authenticate")
+			return nil, fmt.Errorf("no token for account %s. Run 'gsuite login' to authenticate", resolvedEmail)
 		}
-		return nil, fmt.Errorf("failed to load OAuth2 token: %w", err)
+		return nil, fmt.Errorf("failed to load token for %s: %w", resolvedEmail, err)
 	}
 
 	oauthCfg := NewOAuth2Config(clientID, clientSecret)
