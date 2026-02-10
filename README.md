@@ -1,25 +1,6 @@
 # gsuite - Gmail CLI Tool
 
-A command-line interface for Gmail mailbox management using service account authentication with domain-wide delegation.
-
-## What This Tool Does
-
-gsuite provides full access to Gmail operations including reading, sending, searching, and managing messages, threads, labels, and drafts. It's designed for automation workflows and scripting with support for both human-readable and JSON output formats.
-
-## Prerequisites
-
-1. **Google Cloud Project** with Gmail API enabled
-2. **Service Account** with domain-wide delegation enabled
-3. **Google Workspace Admin** must grant the service account access to Gmail scopes:
-   - `https://www.googleapis.com/auth/gmail.modify`
-
-### Setting Up Domain-Wide Delegation
-
-1. Create a service account in Google Cloud Console
-2. Enable domain-wide delegation for the service account
-3. Download the JSON key file
-4. In Google Workspace Admin Console, go to Security > API Controls > Domain-wide Delegation
-5. Add the service account client ID with the required Gmail scopes
+A command-line interface for Gmail mailbox management. Authenticate with your Gmail account via OAuth2 and manage messages, threads, labels, and drafts from the terminal.
 
 ## Installation
 
@@ -28,8 +9,6 @@ gsuite provides full access to Gmail operations including reading, sending, sear
 ```bash
 curl -sSL https://raw.githubusercontent.com/khang859/google-suite-cli/main/install.sh | sh
 ```
-
-This detects your OS and architecture, downloads the latest release, and installs `gsuite` to `/usr/local/bin`.
 
 ### Download from Releases
 
@@ -41,75 +20,137 @@ Pre-built binaries for Linux, macOS, and Windows (amd64/arm64) are available on 
 go build -o gsuite .
 ```
 
+## Prerequisites
+
+1. **Google Cloud Project** with Gmail API enabled
+2. **OAuth2 Client Credentials** (Desktop or Web application type)
+3. Set credentials via environment variable:
+   - `GOOGLE_CREDENTIALS` — raw JSON content
+   - `GOOGLE_APPLICATION_CREDENTIALS` — path to JSON file
+
 ## Quick Start
 
-### Verify Authentication
+```bash
+# Login (opens browser for OAuth2 consent)
+gsuite login
 
-Test that your credentials are working correctly:
+# Verify authentication
+gsuite whoami
+
+# List recent messages
+gsuite messages list
+
+# Send an email
+gsuite send --to "user@example.com" --subject "Hello" --body "Message content"
+
+# Search messages
+gsuite search "from:user@example.com is:unread"
+```
+
+## Multi-Account Support
+
+Login with multiple Gmail accounts and switch between them.
 
 ```bash
-# Using credentials file flag
-./gsuite --credentials-file /path/to/service-account.json --user user@yourdomain.com whoami
+# Login with first account
+gsuite login
 
-# Or using environment variable
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-./gsuite --user user@yourdomain.com whoami
+# Login with another account
+gsuite login
 
-# Or with JSON content in environment
-export GOOGLE_CREDENTIALS='{"type":"service_account",...}'
-./gsuite --user user@yourdomain.com whoami
+# List all accounts (* marks active)
+gsuite accounts list
+
+# Switch active account
+gsuite accounts switch other@gmail.com
+
+# Run a command as a specific account
+gsuite --account other@gmail.com messages list
+
+# Remove an account
+gsuite accounts remove old@gmail.com
+
+# Logout active account
+gsuite logout
 ```
 
-Expected output:
-```
-Email: user@yourdomain.com
-Messages Total: 12345
-Threads Total: 6789
-```
+The `--account` flag (or `GSUITE_ACCOUNT` env var) can be passed to any command to override the active account for that invocation.
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
+| `login` | Authenticate with Gmail via OAuth2 (opens browser) |
+| `logout [email]` | Remove saved token (active account or specified email) |
+| `accounts list` | List all authenticated accounts |
+| `accounts switch <email>` | Switch the active account |
+| `accounts remove <email>` | Remove an authenticated account |
 | `whoami` | Show authenticated user's Gmail profile |
+| `messages list` | List messages with optional filters |
+| `messages get <id>` | Get a specific message |
+| `messages modify <id>` | Add/remove labels on a message |
+| `messages get-attachment <msg-id> <att-id>` | Download an attachment |
+| `threads list` | List conversation threads |
+| `threads get <id>` | Get a thread with all messages |
+| `labels list` | List all Gmail labels |
+| `labels create` | Create a new label |
+| `labels update <id>` | Update a label |
+| `labels delete <id>` | Delete a label |
+| `drafts list` | List drafts |
+| `drafts get <id>` | Get a specific draft |
+| `drafts create` | Create a new draft |
+| `drafts update <id>` | Update an existing draft |
+| `drafts send <id>` | Send a draft |
+| `drafts delete <id>` | Delete a draft |
+| `send` | Send an email (supports markdown, attachments) |
+| `search <query>` | Search messages using Gmail query syntax |
 | `version` | Show version information |
+| `install-skill` | Install the Claude Code skill for Gmail management |
 
 ## Global Flags
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--credentials-file` | `-c` | Path to service account JSON credentials |
-| `--user` | `-u` | Email of user to impersonate (required) |
+| `--account` | | Use a specific account email |
+| `--format` | `-f` | Output format: `text` (default) or `json` |
 | `--verbose` | `-v` | Enable verbose output |
 | `--help` | `-h` | Show help |
 
 ## Credential Loading Priority
 
-1. `--credentials-file` flag (if provided)
-2. `GOOGLE_CREDENTIALS` environment variable (JSON content)
-3. `GOOGLE_APPLICATION_CREDENTIALS` environment variable (file path)
+1. `GOOGLE_CREDENTIALS` environment variable (JSON content)
+2. `GOOGLE_APPLICATION_CREDENTIALS` environment variable (file path)
 
 ## Examples
 
 ```bash
-# Show help
-./gsuite --help
+# List 50 inbox messages
+gsuite messages list -n 50 --label-ids INBOX
 
-# Show whoami help
-./gsuite whoami --help
+# Get a message
+gsuite messages get 18d5a1b2c3d4e5f6
 
-# Check authentication (verbose)
-./gsuite -v --credentials-file creds.json --user admin@company.com whoami
+# Mark as read
+gsuite messages modify 18d5a1b2c3d4e5f6 --remove-labels UNREAD
+
+# Send with markdown and attachments
+gsuite send -t "user@example.com" -s "Report" -b "**Summary:**\n\n- Item one\n- Item two" --attach report.pdf
+
+# Create and send a draft
+gsuite drafts create -t "user@example.com" -s "Hello" -b "Draft content"
+gsuite drafts send r1234567890
+
+# List threads with search
+gsuite threads list -q "from:alice@example.com" -n 20
+
+# Manage labels
+gsuite labels list
+gsuite labels create -n "My Label"
+
+# JSON output for scripting
+gsuite messages list -f json
+gsuite search "is:unread" -f json
 ```
-
-## Error Messages
-
-| Error | Solution |
-|-------|----------|
-| `--user flag required` | Add `--user email@domain.com` to specify user to impersonate |
-| `no credentials provided` | Set `--credentials-file` flag or `GOOGLE_CREDENTIALS` env var |
-| `authentication failed` | Check credentials file exists and is valid JSON |
-| `Gmail API error` | Check domain-wide delegation is configured correctly |
 
 ## License
 
