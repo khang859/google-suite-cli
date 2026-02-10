@@ -26,7 +26,7 @@ func init() {
 func runWhoami(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}

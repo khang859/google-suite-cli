@@ -144,7 +144,7 @@ func init() {
 func runLabelsList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -220,7 +220,7 @@ func runLabelsCreate(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -278,7 +278,7 @@ func runLabelsUpdate(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -344,7 +344,7 @@ func runLabelsDelete(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}

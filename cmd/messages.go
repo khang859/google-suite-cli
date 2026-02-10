@@ -152,7 +152,7 @@ func init() {
 func runMessagesList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -244,7 +244,7 @@ func runMessagesGet(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -403,7 +403,7 @@ func runMessagesModify(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -505,7 +505,7 @@ func runMessagesGetAttachment(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}

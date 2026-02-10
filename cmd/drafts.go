@@ -173,7 +173,7 @@ func init() {
 func runDraftsList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -295,7 +295,7 @@ func runDraftsGet(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -414,7 +414,7 @@ func decodeDraftBase64URL(encoded string) string {
 func runDraftsCreate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -466,7 +466,7 @@ func runDraftsUpdate(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -562,7 +562,7 @@ func runDraftsSend(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -596,7 +596,7 @@ func runDraftsDelete(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	service, err := auth.NewGmailService(ctx)
+	service, err := auth.NewGmailService(ctx, GetAccountEmail())
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}

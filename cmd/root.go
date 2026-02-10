@@ -11,6 +11,7 @@ import (
 var (
 	verbose      bool
 	outputFormat string
+	accountEmail string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -40,6 +41,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "format", "f", "text", "Output format: text or json")
+	rootCmd.PersistentFlags().StringVar(&accountEmail, "account", "", "Use specific account email")
 }
 
 // GetVerbose returns whether verbose mode is enabled.
@@ -50,6 +52,14 @@ func GetVerbose() bool {
 // GetOutputFormat returns the output format from the --format flag.
 func GetOutputFormat() string {
 	return outputFormat
+}
+
+// GetAccountEmail returns the account email from --account flag or GSUITE_ACCOUNT env var.
+func GetAccountEmail() string {
+	if accountEmail != "" {
+		return accountEmail
+	}
+	return os.Getenv("GSUITE_ACCOUNT")
 }
 
 // outputJSON marshals v as indented JSON and prints it to stdout.
