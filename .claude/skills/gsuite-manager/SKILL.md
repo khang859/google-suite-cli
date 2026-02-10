@@ -33,42 +33,70 @@ Before any Gmail operation, verify authentication status:
 gsuite whoami
 ```
 
-If this fails, the user needs to authenticate. **Prefer OAuth2 for personal accounts.**
+If this fails, the user needs to authenticate.
 
-### OAuth2 Login (Personal Gmail)
+### OAuth2 Login
 
-Requires an OAuth2 client credentials JSON file (not a service account).
+Requires OAuth2 client credentials via environment variable:
 
 ```bash
-# Browser-based login (default)
-gsuite login -c /path/to/oauth2-client.json
+# Set credentials (raw JSON or file path)
+export GOOGLE_CREDENTIALS='{"installed":...}'
+# or
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/oauth2-client.json
 
-# Headless environments (SSH, containers)
-gsuite login -c /path/to/oauth2-client.json --no-browser
+# Login (opens browser for OAuth2 consent)
+gsuite login
 ```
 
-After login, the token is cached at `~/.config/gsuite/token.json` and subsequent
-commands work without re-authenticating.
+After login, the token is saved per-account at `~/.config/gsuite/tokens/<email>.json`.
 
-To log out:
+### Multi-Account Support
+
+You can login with multiple Gmail accounts. The most recently logged-in account
+becomes the active account.
 
 ```bash
+# Login with first account
+gsuite login
+
+# Login with another account (opens browser again)
+gsuite login
+
+# List all authenticated accounts (* marks active)
+gsuite accounts list
+
+# Switch active account
+gsuite accounts switch other@gmail.com
+
+# Remove an account
+gsuite accounts remove old@gmail.com
+```
+
+### Using a Specific Account
+
+Use `--account` to run any command as a specific account without switching:
+
+```bash
+gsuite --account work@gmail.com messages list
+gsuite --account personal@gmail.com search "is:unread"
+```
+
+Or set the `GSUITE_ACCOUNT` environment variable:
+
+```bash
+export GSUITE_ACCOUNT=work@gmail.com
+gsuite messages list
+```
+
+### Logout
+
+```bash
+# Logout active account
 gsuite logout
-```
 
-### Service Account (Google Workspace)
-
-For workspace environments with domain-wide delegation, pass credentials and user:
-
-```bash
-gsuite --credentials-file /path/to/sa.json --user user@domain.com whoami
-```
-
-Or set environment variables:
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
-gsuite --user user@domain.com whoami
+# Logout specific account
+gsuite logout other@gmail.com
 ```
 
 ## Safety Rules
@@ -86,12 +114,15 @@ Safe read-only actions that do NOT need confirmation:
 - `whoami`, `messages list`, `messages get`, `threads list`, `threads get`
 - `search`, `labels list`, `drafts list`, `drafts get`
 - `messages get-attachment` (downloads a file, low risk)
+- `accounts list`, `accounts switch` (just changes active account)
 
 Medium-risk actions — confirm if the scope is large:
 - `gsuite labels create` — creating labels
 - `gsuite labels update` — renaming labels
 - `gsuite drafts create` / `drafts update` — creating or editing drafts
 - `gsuite messages modify` with `--add-labels` only — adding labels
+- `gsuite accounts remove` — removes an account and its token
+- `gsuite logout` — removes the active account's token
 
 ## Output Format
 
@@ -238,14 +269,19 @@ gsuite messages get-attachment <message-id> <attachment-id> --output ./downloads
 
 ## Troubleshooting
 
-**"no credentials provided"** — User needs to authenticate. Guide them through
-OAuth2 login or service account setup.
+**"no authenticated accounts"** — No accounts logged in. Run `gsuite login`.
+
+**"no token for account X"** — Account is in the store but token is missing.
+Run `gsuite login` to re-authenticate.
 
 **"authentication failed"** — Credentials are invalid or expired. Try `gsuite logout`
 then `gsuite login` again.
 
-**"Gmail API error: 403"** — Insufficient permissions. The OAuth2 scope or service
-account delegation may not include the required Gmail scope.
+**"Gmail API error: 403"** — Insufficient permissions. The OAuth2 scope may not
+include the required Gmail scope.
 
 **"Gmail API error: 404"** — Message or label not found. The ID may be wrong or
 the item was already deleted.
+
+**"account not found"** — The email passed to `accounts switch` or `accounts remove`
+doesn't match any authenticated account. Check with `gsuite accounts list`.

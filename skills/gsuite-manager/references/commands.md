@@ -6,34 +6,66 @@ Available on all commands:
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--credentials-file` | `-c` | | Path to credentials JSON file |
-| `--user` | `-u` | | Email to impersonate (service account only) |
+| `--account` | | | Use specific account email (overrides active account) |
 | `--format` | `-f` | `text` | Output format: `text` or `json` |
 | `--verbose` | `-v` | `false` | Enable verbose output |
+
+The `--account` flag can also be set via the `GSUITE_ACCOUNT` environment variable.
 
 ## Authentication
 
 ### `gsuite login`
 
-Authenticate with Gmail using OAuth2.
+Authenticate with Gmail using OAuth2. Opens browser for consent flow.
+You can login with multiple accounts — the most recently logged-in becomes active.
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--no-browser` | `false` | Use device authorization flow (for headless environments) |
+Requires credentials via `GOOGLE_CREDENTIALS` env var (raw JSON) or
+`GOOGLE_APPLICATION_CREDENTIALS` env var (file path).
 
 ```bash
 gsuite login
-gsuite login -c /path/to/oauth2-client.json
-gsuite login --no-browser
 ```
 
-### `gsuite logout`
+### `gsuite logout [email]`
 
-Remove saved OAuth2 token at `~/.config/gsuite/token.json`.
+Remove an authenticated account and its stored token. If no email is given,
+logs out the active account. If other accounts remain, the next available
+account becomes active.
 
 ```bash
 gsuite logout
+gsuite logout other@gmail.com
 ```
+
+## Accounts
+
+### `gsuite accounts list`
+
+List all authenticated accounts. The active account is marked with `*`.
+
+```bash
+gsuite accounts list
+gsuite accounts list -f json
+```
+
+### `gsuite accounts switch <email>`
+
+Switch the active account. The email must be an already authenticated account.
+
+```bash
+gsuite accounts switch user@gmail.com
+```
+
+### `gsuite accounts remove <email>`
+
+Remove an authenticated account and its stored token. If the removed account
+was active, another account is set as active automatically.
+
+```bash
+gsuite accounts remove user@gmail.com
+```
+
+## Profile
 
 ### `gsuite whoami`
 
