@@ -1,5 +1,32 @@
 # Project Milestones: Google Suite CLI
 
+## v3.0 Multi-Account Support (Shipped: 2026-02-10)
+
+**Delivered:** Multi-account Gmail support — login to multiple accounts, switch between them, and target specific accounts per-command with `--account` flag.
+
+**Phases completed:** 11 (4 plans total)
+
+**Key accomplishments:**
+- AccountStore with full CRUD for managing multiple Gmail accounts
+- Per-account token storage under `~/.config/gsuite/tokens/`
+- Transparent auto-migration from single-token to multi-account format
+- `accounts list/switch/remove` CLI commands
+- `--account` global flag with `GSUITE_ACCOUNT` env var fallback
+- All 19 command call sites wired to multi-account auth
+
+**Stats:**
+- 20 files changed, 1,043 insertions, 72 deletions
+- 3,681 lines of Go (total project)
+- 1 phase, 4 plans, 9 tasks
+- 1 day (2026-02-10)
+- 12 commits
+
+**Git range:** `c87b4e1` → `2352f3d`
+
+**What's next:** TBD
+
+---
+
 ## v2.0 Auth Simplification (Shipped: 2026-02-07)
 
 **Delivered:** Stripped CLI to OAuth2 PKCE-only authentication — removed service account JWT, device flow, Config struct, and legacy flags. Net -60 lines, single auth path via `auth.NewGmailService(ctx)`.

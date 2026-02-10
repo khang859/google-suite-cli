@@ -60,9 +60,12 @@ None
 
 </details>
 
-### v3.0 Multi-Account Support (Phase 11)
+<details>
+<summary>✅ v3.0 Multi-Account Support (Phase 11) — SHIPPED 2026-02-10</summary>
 
 - [x] Phase 11: Multi-Account Support (4/4 plans) — completed 2026-02-10
+
+</details>
 
 ## Progress
 

@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A Go CLI tool for full Gmail mailbox management via OAuth2 PKCE authentication. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes.
+A Go CLI tool for full Gmail mailbox management via OAuth2 PKCE authentication with multi-account support. Provides complete API coverage — messages, threads, search, labels, drafts, attachments, and send — with both human-readable and JSON output modes. Supports multiple Gmail accounts with per-command account targeting.
 
 ## Core Value
 
-Complete Gmail API coverage through a secure, scriptable command-line interface — every operation available, simple OAuth2 auth.
+Complete Gmail API coverage through a secure, scriptable command-line interface — every operation available, simple OAuth2 auth, multiple accounts.
 
 ## Requirements
 
@@ -26,10 +26,14 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 - ✓ Simplified auth to OAuth2 PKCE-only (removed service account, device flow) — v2.0
 - ✓ Config-free auth API: `auth.NewGmailService(ctx)` with no struct — v2.0
 - ✓ Clean CLI with only `--verbose` and `--format` global flags — v2.0
+- ✓ Multi-account support with per-account token storage — v3.0
+- ✓ Account management commands (list, switch, remove) — v3.0
+- ✓ `--account` global flag for per-command account targeting — v3.0
+- ✓ Transparent auto-migration from single-token to multi-account — v3.0
 
 ### Active
 
-(None — all v1.0–v2.0 requirements shipped)
+(None — all v1.0–v3.0 requirements shipped)
 
 ### Out of Scope
 
@@ -39,15 +43,15 @@ Complete Gmail API coverage through a secure, scriptable command-line interface 
 
 ## Context
 
-Shipped v2.0 with 3,028 LOC across 13 Go files.
+Shipped v3.0 with 3,681 LOC across 15 Go files.
 Tech stack: Go, Cobra CLI, Google Gmail API, OAuth2 PKCE.
-64 commits over 3 days. 10 phases (17 plans) across 4 milestones complete.
-Single auth path: OAuth2 PKCE browser flow only.
+76 commits over 6 days. 11 phases (21 plans) across 5 milestones complete.
+Single auth path: OAuth2 PKCE browser flow with multi-account support.
 
 ## Constraints
 
 - **Tech stack**: Go — single binary, good for CLI tools
-- **Auth**: OAuth2 PKCE only — browser-based login, token stored in XDG config dir
+- **Auth**: OAuth2 PKCE only — browser-based login, per-account tokens stored in XDG config dir
 - **Security**: Credentials via env var (preferred) or file path; tokens stored with 0600 permissions
 
 ## Key Decisions
@@ -70,6 +74,11 @@ Single auth path: OAuth2 PKCE browser flow only.
 | golang.org/x/oauth2 device flow | Built-in support, no custom implementation needed | ✓ Good |
 | Strip to OAuth2 PKCE-only | Simplicity over flexibility — one auth path reduces complexity | ✓ Good |
 | Remove Config struct entirely | No subcommand needs credentials — auth is internal to package | ✓ Good |
+| Per-account token files | Simpler file locking, easier to debug, can delete one without parsing | ✓ Good |
+| Email as account identifier | Emails are unique, discoverable; avoids "what did I name that profile?" | ✓ Good |
+| accounts.json manifest | Single source of truth for active account; lightweight metadata | ✓ Good |
+| --account flag (not --profile) | Gmail-specific, clearer intent than generic "profile" | ✓ Good |
+| Auto-migration from single-token | Existing users shouldn't have to do anything; it just works | ✓ Good |
 
 ---
-*Last updated: 2026-02-07 after v2.0 milestone*
+*Last updated: 2026-02-10 after v3.0 milestone*

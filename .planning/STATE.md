@@ -2,26 +2,26 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-07)
+See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** v3.0 Multi-Account Support
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 11 of 11 (Multi-Account Support)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-02-10 — Completed 11-04-PLAN.md
+Phase: 11 of 11 (all phases complete)
+Plan: All complete
+Status: v3.0 shipped
+Last activity: 2026-02-10 — v3.0 Multi-Account Support milestone complete
 
 Progress: ██████████ 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 21
 - Average duration: ~3-4 min/plan (parallel execution)
-- Total project time: ~3 days wall clock
+- Total project time: ~6 days wall clock
 
 **By Phase:**
 
@@ -45,12 +45,6 @@ Progress: ██████████ 100%
 
 All decisions logged in PROJECT.md Key Decisions table.
 
-| Phase | Decision | Rationale |
-|-------|----------|-----------|
-| 10 | Removed Config struct entirely | No subcommand needs to pass credentials — auth is always OAuth2 PKCE via env vars |
-| 11 | Legacy token functions renamed, not deleted | Preserve backward compat until migration plan (11-02) handles switchover |
-| 11 | NewGmailService signature changed to accept account parameter | Breaking change — callers updated in plan 11-03 (ahead of schedule) |
-
 ### Deferred Issues
 
 None.
@@ -64,11 +58,11 @@ None.
 - Milestone v1.0 created and shipped: Full Gmail CLI with API coverage
 - Milestone v1.1 created and shipped: OAuth2 browser-based login for personal Gmail
 - Milestone v1.2 created and shipped: Headless device auth flow for EC2/SSH login
-- Milestone v2.0 created and shipped: Auth simplification — strip to OAuth2 PKCE only, 2 phases (Phase 9-10)
-- Milestone v3.0 completed: Multi-Account Support — Phase 11 (4 plans) — SHIPPED 2026-02-10
+- Milestone v2.0 created and shipped: Auth simplification — strip to OAuth2 PKCE only
+- Milestone v3.0 created and shipped: Multi-Account Support — Phase 11 (4 plans)
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 11-04-PLAN.md — Phase 11 complete, v3.0 milestone done
+Stopped at: v3.0 milestone complete
 Resume file: None
