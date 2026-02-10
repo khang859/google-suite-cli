@@ -61,8 +61,8 @@ func extractOAuth2ClientCreds(jsonData []byte) (clientID, clientSecret string, e
 	return creds.ClientID, creds.ClientSecret, nil
 }
 
-// Login performs the OAuth2 PKCE browser login flow, saves the token, and
-// returns the authenticated user's email address.
+// Login performs the OAuth2 PKCE browser login flow, saves the per-account
+// token, updates the account store, and returns the authenticated user's email.
 func Login(ctx context.Context, credJSON []byte) (string, error) {
 	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
 	if err != nil {
@@ -75,10 +75,6 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 		return "", fmt.Errorf("authentication failed: %w", err)
 	}
 
-	if err := saveLegacyToken(token); err != nil {
-		return "", fmt.Errorf("failed to save token: %w", err)
-	}
-
 	service, err := oauthCfg.NewGmailService(ctx, token)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Gmail service: %w", err)
@@ -88,8 +84,24 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get user profile: %w", err)
 	}
+	email := profile.EmailAddress
 
-	return profile.EmailAddress, nil
+	if err := SaveTokenFor(email, token); err != nil {
+		return "", fmt.Errorf("failed to save token for %s: %w", email, err)
+	}
+
+	store, err := LoadAccountStore()
+	if err != nil {
+		return "", fmt.Errorf("failed to load account store: %w", err)
+	}
+	if err := store.AddAccount(email); err != nil {
+		return "", fmt.Errorf("failed to add account %s: %w", email, err)
+	}
+	if err := store.Save(); err != nil {
+		return "", fmt.Errorf("failed to save account store: %w", err)
+	}
+
+	return email, nil
 }
 
 // NewGmailService creates an authenticated Gmail service using OAuth2 client
