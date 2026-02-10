@@ -14,7 +14,7 @@ None
 - ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
 - ✅ **v1.2 Headless Login** — Phase 8 (shipped 2026-02-06)
 - ✅ **v2.0 Auth Simplification** — Phases 9-10 (shipped 2026-02-07)
-- 🔄 **v3.0 Multi-Account Support** — Phase 11 (in progress)
+- ✅ **v3.0 Multi-Account Support** — Phase 11 (shipped 2026-02-10)
 
 ## Completed Milestones
 
@@ -22,6 +22,7 @@ None
 - ✅ [v1.1 OAuth2 Support](milestones/v1.1-ROADMAP.md) (Phases 5-7) — SHIPPED 2026-02-06
 - ✅ [v1.2 Headless Login](milestones/v1.2-ROADMAP.md) (Phase 8) — SHIPPED 2026-02-06
 - ✅ [v2.0 Auth Simplification](milestones/v2.0-ROADMAP.md) (Phases 9-10) — SHIPPED 2026-02-07
+- ✅ [v3.0 Multi-Account Support](milestones/v3.0-ROADMAP.md) (Phase 11) — SHIPPED 2026-02-10
 
 ## Phases
 
@@ -61,7 +62,7 @@ None
 
 ### v3.0 Multi-Account Support (Phase 11)
 
-- [ ] Phase 11: Multi-Account Support (3/4 plans) — in progress
+- [x] Phase 11: Multi-Account Support (4/4 plans) — completed 2026-02-10
 
 ## Progress
 
@@ -77,4 +78,4 @@ None
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
 | 9. Remove Auth Code | v2.0 | 1/1 | Complete | 2026-02-07 |
 | 10. Simplify CLI | v2.0 | 1/1 | Complete | 2026-02-07 |
-| 11. Multi-Account Support | v3.0 | 3/4 | In progress | — |
+| 11. Multi-Account Support | v3.0 | 4/4 | Complete | 2026-02-10 |
