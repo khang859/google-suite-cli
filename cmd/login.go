@@ -60,7 +60,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 }
 
 func runLogout(cmd *cobra.Command, args []string) error {
-	tokenPath, err := auth.TokenPath()
+	tokenPath, err := auth.LegacyTokenPath()
 	if err != nil {
 		return fmt.Errorf("failed to determine token path: %w", err)
 	}

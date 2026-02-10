@@ -75,7 +75,7 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 		return "", fmt.Errorf("authentication failed: %w", err)
 	}
 
-	if err := SaveToken(token); err != nil {
+	if err := saveLegacyToken(token); err != nil {
 		return "", fmt.Errorf("failed to save token: %w", err)
 	}
 
@@ -105,7 +105,7 @@ func NewGmailService(ctx context.Context) (*gmail.Service, error) {
 		return nil, err
 	}
 
-	token, err := LoadToken()
+	token, err := LoadLegacyToken()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, fmt.Errorf("no OAuth2 token found. Run 'gsuite login' first to authenticate")
