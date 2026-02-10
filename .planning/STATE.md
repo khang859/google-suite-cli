@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-07)
 
 **Core value:** Complete Gmail API coverage through a secure, scriptable command-line interface
-**Current focus:** All milestones complete (v1.0–v2.0 shipped)
+**Current focus:** v3.0 Multi-Account Support
 
 ## Current Position
 
-Phase: 10 of 10 (Simplify CLI)
-Plan: All complete
-Status: v2.0 milestone shipped — all 4 milestones complete
-Last activity: 2026-02-07 — v2.0 Auth Simplification milestone archived
+Phase: 11 of 11 (Multi-Account Support)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-10 — Completed 11-01-PLAN.md
 
-Progress: ██████████ 100%
+Progress: █░░░░░░░░░ 5%
 
 ## Performance Metrics
 
@@ -37,6 +37,7 @@ Progress: ██████████ 100%
 | 8. Device Auth Flow | 1/1 | ~3 min | ~3 min |
 | 9. Remove Auth Code | 1/1 | ~2 min | ~2 min |
 | 10. Simplify CLI | 1/1 | ~4 min | ~4 min |
+| 11. Multi-Account | 1/4 | ~1 min | ~1 min |
 
 ## Accumulated Context
 
@@ -47,6 +48,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 | Phase | Decision | Rationale |
 |-------|----------|-----------|
 | 10 | Removed Config struct entirely | No subcommand needs to pass credentials — auth is always OAuth2 PKCE via env vars |
+| 11 | Legacy token functions renamed, not deleted | Preserve backward compat until migration plan (11-02) handles switchover |
 
 ### Deferred Issues
 
@@ -62,9 +64,10 @@ None.
 - Milestone v1.1 created and shipped: OAuth2 browser-based login for personal Gmail
 - Milestone v1.2 created and shipped: Headless device auth flow for EC2/SSH login
 - Milestone v2.0 created and shipped: Auth simplification — strip to OAuth2 PKCE only, 2 phases (Phase 9-10)
+- Milestone v3.0 started: Multi-Account Support — Phase 11 (4 plans)
 
 ## Session Continuity
 
-Last session: 2026-02-07
-Stopped at: v2.0 milestone archived — all milestones complete
+Last session: 2026-02-10
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None

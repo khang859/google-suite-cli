@@ -14,6 +14,7 @@ None
 - ✅ **v1.1 OAuth2 Support** — Phases 5-7 (shipped 2026-02-06)
 - ✅ **v1.2 Headless Login** — Phase 8 (shipped 2026-02-06)
 - ✅ **v2.0 Auth Simplification** — Phases 9-10 (shipped 2026-02-07)
+- 🔄 **v3.0 Multi-Account Support** — Phase 11 (in progress)
 
 ## Completed Milestones
 
@@ -58,6 +59,10 @@ None
 
 </details>
 
+### v3.0 Multi-Account Support (Phase 11)
+
+- [ ] Phase 11: Multi-Account Support (1/4 plans) — in progress
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -72,3 +77,4 @@ None
 | 8. Device Authorization Flow | v1.2 | 1/1 | Complete | 2026-02-06 |
 | 9. Remove Auth Code | v2.0 | 1/1 | Complete | 2026-02-07 |
 | 10. Simplify CLI | v2.0 | 1/1 | Complete | 2026-02-07 |
+| 11. Multi-Account Support | v3.0 | 1/4 | In progress | — |
