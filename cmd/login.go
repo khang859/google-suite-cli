@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/khang/google-suite-cli/internal/auth"
 	"github.com/spf13/cobra"
@@ -14,6 +13,10 @@ var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate with Gmail using OAuth2",
 	Long: `Authenticate with Gmail using OAuth2.
+
+You can login with multiple accounts. The most recently logged-in account
+becomes the active account. Use 'gsuite accounts list' to see all accounts
+and 'gsuite accounts switch' to change the active account.
 
 This command opens your browser to complete the Google OAuth2 consent flow
 using PKCE for security. After authentication, a token is saved locally so
@@ -28,12 +31,16 @@ or GOOGLE_APPLICATION_CREDENTIALS env var (file path).`,
 
 // logoutCmd represents the logout command
 var logoutCmd = &cobra.Command{
-	Use:   "logout",
+	Use:   "logout [email]",
 	Short: "Remove saved OAuth2 token",
-	Long: `Remove the locally saved OAuth2 token, effectively logging out.
+	Long: `Remove an authenticated account and its stored token.
 
-The token file is stored at ~/.config/gsuite/token.json.
-After logout, you will need to run 'gsuite login' again to authenticate.`,
+If an email argument is provided, that specific account is logged out.
+If no argument is provided, the currently active account is logged out.
+
+After logout, if other accounts remain, the next available account
+becomes active. Use 'gsuite accounts list' to see remaining accounts.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runLogout,
 }
 
@@ -56,24 +63,51 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Logged in as %s\n", email)
+
+	store, err := auth.LoadAccountStore()
+	if err == nil && len(store.List()) > 1 {
+		fmt.Printf("Active account set to %s. Use 'gsuite accounts list' to see all accounts.\n", email)
+	}
+
 	return nil
 }
 
 func runLogout(cmd *cobra.Command, args []string) error {
-	tokenPath, err := auth.LegacyTokenPath()
+	store, err := auth.LoadAccountStore()
 	if err != nil {
-		return fmt.Errorf("failed to determine token path: %w", err)
+		return fmt.Errorf("failed to load account store: %w", err)
 	}
 
-	if _, err := os.Stat(tokenPath); os.IsNotExist(err) {
-		fmt.Println("Not logged in")
-		return nil
+	var email string
+	if len(args) > 0 {
+		email = args[0]
+	} else {
+		email, err = store.GetActive()
+		if err != nil {
+			fmt.Println("Not logged in")
+			return nil
+		}
 	}
 
-	if err := os.Remove(tokenPath); err != nil {
+	if err := store.RemoveAccount(email); err != nil {
+		return err
+	}
+
+	if err := store.Save(); err != nil {
+		return fmt.Errorf("failed to save account store: %w", err)
+	}
+
+	if err := auth.DeleteTokenFor(email); err != nil {
 		return fmt.Errorf("failed to remove token: %w", err)
 	}
 
-	fmt.Println("Logged out — token removed")
+	fmt.Printf("Logged out of %s\n", email)
+
+	if len(store.List()) > 0 {
+		fmt.Printf("Active account: %s\n", store.Active)
+	} else {
+		fmt.Println("No remaining accounts")
+	}
+
 	return nil
 }
