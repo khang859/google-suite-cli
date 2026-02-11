@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
 )
@@ -43,7 +44,11 @@ func NewOAuth2Config(clientID, clientSecret string) *OAuth2Config {
 			ClientSecret: clientSecret,
 			Endpoint:     google.Endpoint,
 			RedirectURL:  redirectURL,
-			Scopes:       []string{gmail.GmailModifyScope},
+			Scopes: []string{
+				gmail.GmailModifyScope,
+				calendar.CalendarEventsScope,
+				calendar.CalendarReadonlyScope,
+			},
 		},
 	}
 }
@@ -159,6 +164,19 @@ func (c *OAuth2Config) NewGmailService(ctx context.Context, token *oauth2.Token)
 	service, err := gmail.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gmail service: %w", err)
+	}
+
+	return service, nil
+}
+
+// NewCalendarService creates an authenticated Calendar service from an existing OAuth2 token.
+func (c *OAuth2Config) NewCalendarService(ctx context.Context, token *oauth2.Token) (*calendar.Service, error) {
+	tokenSource := c.config.TokenSource(ctx, token)
+	client := oauth2.NewClient(ctx, tokenSource)
+
+	service, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Calendar service: %w", err)
 	}
 
 	return service, nil

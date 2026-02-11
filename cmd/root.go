@@ -17,13 +17,14 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gsuite",
-	Short: "Gmail CLI tool",
-	Long: `gsuite is a command-line interface for Gmail mailbox management.
+	Short: "Google Workspace CLI tool",
+	Long: `gsuite is a command-line interface for Google Workspace management.
 
 Authenticate with 'gsuite login' to get started.
 
-Provides full access to Gmail operations including reading, sending, searching,
-and managing messages, threads, labels, and drafts.
+Provides access to Gmail operations including reading, sending, searching,
+and managing messages, threads, labels, and drafts. Also supports Google Calendar
+for listing, creating, updating, and responding to events.
 
 Designed for automation workflows and scripting with support for both
 human-readable and JSON output formats.`,
