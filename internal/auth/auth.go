@@ -1,4 +1,4 @@
-// Package auth provides OAuth2 PKCE authentication for Google Gmail API.
+// Package auth provides OAuth2 PKCE authentication for Google Gmail and Calendar APIs.
 package auth
 
 import (
@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/oauth2"
+	calendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/googleapi"
 )
 
 // LoadCredentials loads OAuth2 client credentials JSON from environment variables.
@@ -104,44 +107,99 @@ func Login(ctx context.Context, credJSON []byte) (string, error) {
 	return email, nil
 }
 
-// NewGmailService creates an authenticated Gmail service for the given account.
-// If account is empty, the active account from AccountStore is used.
-// Runs EnsureMigrated to transparently upgrade legacy single-token setups.
-func NewGmailService(ctx context.Context, account string) (*gmail.Service, error) {
+// newAuthenticatedClient loads credentials, resolves the account, and returns
+// a configured OAuth2Config and token ready to create service clients.
+func newAuthenticatedClient(ctx context.Context, account string) (*OAuth2Config, *oauth2.Token, error) {
 	credJSON, err := LoadCredentials()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load credentials: %w", err)
+		return nil, nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
 
 	clientID, clientSecret, err := extractOAuth2ClientCreds(credJSON)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := EnsureMigrated(ctx); err != nil {
-		return nil, fmt.Errorf("failed to run migration: %w", err)
+		return nil, nil, fmt.Errorf("failed to run migration: %w", err)
 	}
 
 	resolvedEmail := account
 	if resolvedEmail == "" {
 		store, err := LoadAccountStore()
 		if err != nil {
-			return nil, fmt.Errorf("failed to load account store: %w", err)
+			return nil, nil, fmt.Errorf("failed to load account store: %w", err)
 		}
 		resolvedEmail, err = store.GetActive()
 		if err != nil {
-			return nil, fmt.Errorf("no authenticated accounts. Run 'gsuite login' first")
+			return nil, nil, fmt.Errorf("no authenticated accounts. Run 'gsuite login' first")
 		}
 	}
 
 	token, err := LoadTokenFor(resolvedEmail)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("no token for account %s. Run 'gsuite login' to authenticate", resolvedEmail)
+			return nil, nil, fmt.Errorf("no token for account %s. Run 'gsuite login' to authenticate", resolvedEmail)
 		}
-		return nil, fmt.Errorf("failed to load token for %s: %w", resolvedEmail, err)
+		return nil, nil, fmt.Errorf("failed to load token for %s: %w", resolvedEmail, err)
 	}
 
 	oauthCfg := NewOAuth2Config(clientID, clientSecret)
+	return oauthCfg, token, nil
+}
+
+// NewGmailService creates an authenticated Gmail service for the given account.
+// If account is empty, the active account from AccountStore is used.
+// Runs EnsureMigrated to transparently upgrade legacy single-token setups.
+func NewGmailService(ctx context.Context, account string) (*gmail.Service, error) {
+	oauthCfg, token, err := newAuthenticatedClient(ctx, account)
+	if err != nil {
+		return nil, err
+	}
 	return oauthCfg.NewGmailService(ctx, token)
+}
+
+// NewCalendarService creates an authenticated Calendar service for the given account.
+// If account is empty, the active account from AccountStore is used.
+func NewCalendarService(ctx context.Context, account string) (*calendar.Service, error) {
+	oauthCfg, token, err := newAuthenticatedClient(ctx, account)
+	if err != nil {
+		return nil, err
+	}
+	return oauthCfg.NewCalendarService(ctx, token)
+}
+
+// isInsufficientScopeError checks if an API error is a 403 with insufficientPermissions reason.
+func isInsufficientScopeError(err error) bool {
+	var gErr *googleapi.Error
+	if errors.As(err, &gErr) && gErr.Code == 403 {
+		for _, item := range gErr.Errors {
+			if item.Reason == "insufficientPermissions" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HandleCalendarError translates common Google API errors into user-friendly messages.
+func HandleCalendarError(err error, context string) error {
+	if err == nil {
+		return nil
+	}
+	var gErr *googleapi.Error
+	if errors.As(err, &gErr) {
+		switch gErr.Code {
+		case 401:
+			return fmt.Errorf("%s: authentication expired. Run 'gsuite login' to re-authenticate", context)
+		case 403:
+			if isInsufficientScopeError(err) {
+				return fmt.Errorf("%s: calendar permission not granted. Run 'gsuite login' to re-authenticate with calendar access", context)
+			}
+			return fmt.Errorf("%s: access denied: %w", context, err)
+		case 404:
+			return fmt.Errorf("%s: not found", context)
+		}
+	}
+	return fmt.Errorf("%s: %w", context, err)
 }

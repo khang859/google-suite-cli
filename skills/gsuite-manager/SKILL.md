@@ -1,18 +1,20 @@
 ---
 name: gsuite-manager
 description: >-
-  This skill should be used when managing Gmail through the gsuite CLI tool.
-  It applies when the user asks to read, send, search, label, archive, or
-  otherwise manage their Gmail — including messages, threads, labels, drafts,
-  and attachments. Trigger keywords include email, Gmail, inbox, send, draft,
-  label, search mail, unread, archive, attachment.
+  This skill should be used when managing Gmail or Google Calendar through the
+  gsuite CLI tool. It applies when the user asks to read, send, search, label,
+  archive, or otherwise manage their Gmail — including messages, threads, labels,
+  drafts, and attachments — or when managing calendar events including listing,
+  creating, updating, deleting, and responding to invitations. Trigger keywords
+  include email, Gmail, inbox, send, draft, label, search mail, unread, archive,
+  attachment, calendar, events, meeting, schedule, RSVP, invite.
 ---
 
-# Gmail Manager via gsuite CLI
+# Google Workspace Manager via gsuite CLI
 
-Manage Gmail accounts through the `gsuite` command-line tool. This skill covers
-authentication, reading mail, sending emails, organizing with labels, managing
-drafts, searching, and inbox cleanup.
+Manage Gmail and Google Calendar through the `gsuite` command-line tool. This
+skill covers authentication, reading mail, sending emails, organizing with
+labels, managing drafts, searching, inbox cleanup, and calendar event management.
 
 ## Prerequisites
 
@@ -109,12 +111,17 @@ Destructive actions that MUST be confirmed:
 - `gsuite drafts delete` — permanently deletes a draft
 - `gsuite labels delete` — permanently deletes a label
 - `gsuite messages modify` with `--remove-labels` — removing labels from messages
+- `gsuite calendar delete` — deletes a calendar event
+- `gsuite calendar delete --recurring-scope all` — deletes ALL instances of a recurring event (requires `--yes`)
+- `gsuite calendar create --send-updates all` — sends real email invitations to attendees
+- `gsuite calendar update --send-updates all` — sends update notifications to attendees
 
 Safe read-only actions that do NOT need confirmation:
 - `whoami`, `messages list`, `messages get`, `threads list`, `threads get`
 - `search`, `labels list`, `drafts list`, `drafts get`
 - `messages get-attachment` (downloads a file, low risk)
 - `accounts list`, `accounts switch` (just changes active account)
+- `calendar list`, `calendar get`, `calendar today`, `calendar week`, `calendar calendars`
 
 Medium-risk actions — confirm if the scope is large:
 - `gsuite labels create` — creating labels
@@ -123,6 +130,9 @@ Medium-risk actions — confirm if the scope is large:
 - `gsuite messages modify` with `--add-labels` only — adding labels
 - `gsuite accounts remove` — removes an account and its token
 - `gsuite logout` — removes the active account's token
+- `gsuite calendar create` (without `--send-updates all`) — creates event without notifying
+- `gsuite calendar update` (without `--send-updates all`) — modifies event without notifying
+- `gsuite calendar respond` — changes your RSVP status
 
 ## Output Format
 
@@ -267,6 +277,114 @@ Then download:
 gsuite messages get-attachment <message-id> <attachment-id> --output ./downloads/file.pdf
 ```
 
+## Calendar Workflows
+
+### Check Today's Schedule
+
+```bash
+gsuite calendar today
+```
+
+### Check This Week's Events
+
+```bash
+gsuite calendar week
+```
+
+### List Upcoming Events
+
+```bash
+gsuite calendar list
+gsuite calendar list --after today --before +7d -n 50
+gsuite calendar list --query "standup" --after today
+```
+
+### View Event Details
+
+```bash
+gsuite calendar get <event-id>
+gsuite calendar get <event-id> -f json
+```
+
+### Create a Meeting
+
+After confirming with the user:
+
+```bash
+# Simple 1-hour meeting (default duration)
+gsuite calendar create --summary "Team Meeting" --start "2026-03-15 09:00"
+
+# Meeting with explicit duration
+gsuite calendar create --summary "Standup" --start "2026-03-15 09:00" --duration 30m
+
+# All-day event
+gsuite calendar create --summary "Company Holiday" --start 2026-12-25 --all-day
+
+# Meeting with attendees (sends invitations)
+gsuite calendar create --summary "Review" --start "2026-03-15 14:00" --duration 1h \
+  --attendees "alice@example.com,bob@example.com" --send-updates all
+
+# Recurring weekly meeting
+gsuite calendar create --summary "1:1" --start "2026-03-15 10:00" --duration 30m \
+  --rrule "FREQ=WEEKLY;BYDAY=MO"
+```
+
+### Update an Event
+
+```bash
+# Change title
+gsuite calendar update <event-id> --summary "New Title"
+
+# Reschedule
+gsuite calendar update <event-id> --start "2026-03-20 10:00" --end "2026-03-20 11:00"
+
+# Add attendees and notify them
+gsuite calendar update <event-id> --add-attendees "carol@example.com" --send-updates all
+
+# Update all instances of a recurring event
+gsuite calendar update <event-id> --summary "New Name" --recurring-scope all
+```
+
+### RSVP to an Event
+
+```bash
+gsuite calendar respond <event-id> --status accepted
+gsuite calendar respond <event-id> --status declined --comment "Out of office"
+gsuite calendar respond <event-id> --status tentative
+```
+
+### Delete an Event
+
+After confirming with the user:
+
+```bash
+gsuite calendar delete <event-id>
+
+# Delete all instances of a recurring event (requires --yes)
+gsuite calendar delete <event-id> --recurring-scope all --yes
+```
+
+### List Available Calendars
+
+```bash
+gsuite calendar calendars
+```
+
+### Date/Time Input Formats
+
+Calendar commands accept flexible date/time formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| RFC3339 | `2026-03-15T09:00:00-07:00` | Full timestamp with timezone |
+| Date + time | `2026-03-15 09:00` | Date and time (local timezone) |
+| Date only | `2026-03-15` | Start of day |
+| Time only | `09:00` | Today at that time |
+| `today` | `today` | Start of today |
+| `tomorrow` | `tomorrow` | Start of tomorrow |
+| Day name | `monday` | Next occurrence of that day |
+| Relative | `+3d` | 3 days from now |
+
 ## Troubleshooting
 
 **"no authenticated accounts"** — No accounts logged in. Run `gsuite login`.
@@ -285,3 +403,9 @@ the item was already deleted.
 
 **"account not found"** — The email passed to `accounts switch` or `accounts remove`
 doesn't match any authenticated account. Check with `gsuite accounts list`.
+
+**"calendar permission not granted"** — The OAuth2 token doesn't include calendar
+scopes. Run `gsuite login` to re-authenticate with calendar access.
+
+**"you are not listed as an attendee"** — Trying to RSVP to an event where you
+are not in the attendees list. Check the event with `gsuite calendar get <id>`.

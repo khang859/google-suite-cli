@@ -1,6 +1,6 @@
-# gsuite - Gmail CLI Tool
+# gsuite - Google Workspace CLI Tool
 
-A command-line interface for Gmail mailbox management. Authenticate with your Gmail account via OAuth2 and manage messages, threads, labels, and drafts from the terminal.
+A command-line interface for Google Workspace management. Authenticate with your account via OAuth2 and manage Gmail messages, threads, labels, drafts, and Google Calendar events from the terminal.
 
 ## Installation
 
@@ -22,7 +22,7 @@ go build -o gsuite .
 
 ## Prerequisites
 
-1. **Google Cloud Project** with Gmail API enabled
+1. **Google Cloud Project** with Gmail API and Calendar API enabled
 2. **OAuth2 Client Credentials** (Desktop or Web application type)
 3. Set credentials via environment variable:
    - `GOOGLE_CREDENTIALS` — raw JSON content
@@ -45,6 +45,12 @@ gsuite send --to "user@example.com" --subject "Hello" --body "Message content"
 
 # Search messages
 gsuite search "from:user@example.com is:unread"
+
+# View today's calendar events
+gsuite calendar today
+
+# Create a meeting
+gsuite calendar create --summary "Team Standup" --start "2026-03-15 09:00" --duration 30m
 ```
 
 ## Multi-Account Support
@@ -104,6 +110,15 @@ The `--account` flag (or `GSUITE_ACCOUNT` env var) can be passed to any command 
 | `drafts delete <id>` | Delete a draft |
 | `send` | Send an email (supports markdown, attachments) |
 | `search <query>` | Search messages using Gmail query syntax |
+| `calendar list` | List upcoming calendar events |
+| `calendar get <id>` | Get event details including attendees |
+| `calendar create` | Create a calendar event |
+| `calendar update <id>` | Update an existing event |
+| `calendar delete <id>` | Delete a calendar event |
+| `calendar respond <id>` | RSVP to an event invitation |
+| `calendar today` | Show today's events |
+| `calendar week` | Show this week's events (Mon-Sun) |
+| `calendar calendars` | List available calendars |
 | `version` | Show version information |
 | `install-skill` | Install the Claude Code skill for Gmail management |
 
@@ -150,6 +165,20 @@ gsuite labels create -n "My Label"
 # JSON output for scripting
 gsuite messages list -f json
 gsuite search "is:unread" -f json
+
+# Calendar: list upcoming events
+gsuite calendar list --after today --before +7d
+
+# Calendar: create a recurring meeting with attendees
+gsuite calendar create --summary "Weekly 1:1" --start "2026-03-15 10:00" \
+  --duration 30m --rrule "FREQ=WEEKLY;BYDAY=MO" \
+  --attendees "alice@example.com" --send-updates all
+
+# Calendar: RSVP to an event
+gsuite calendar respond abc123def456 --status accepted
+
+# Calendar: delete a recurring event (all instances)
+gsuite calendar delete abc123def456 --recurring-scope all --yes
 ```
 
 ## License

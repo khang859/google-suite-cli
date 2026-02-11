@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"google.golang.org/api/googleapi"
 )
 
 func TestExtractOAuth2ClientCreds(t *testing.T) {
@@ -78,6 +81,130 @@ func TestExtractOAuth2ClientCreds(t *testing.T) {
 			}
 			if clientSecret != tt.wantClientSec {
 				t.Errorf("clientSecret = %q, want %q", clientSecret, tt.wantClientSec)
+			}
+		})
+	}
+}
+
+func TestIsInsufficientScopeError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "should return true for 403 with insufficientPermissions",
+			err: &googleapi.Error{
+				Code:   403,
+				Errors: []googleapi.ErrorItem{{Reason: "insufficientPermissions"}},
+			},
+			want: true,
+		},
+		{
+			name: "should return false for 403 with different reason",
+			err: &googleapi.Error{
+				Code:   403,
+				Errors: []googleapi.ErrorItem{{Reason: "forbidden"}},
+			},
+			want: false,
+		},
+		{
+			name: "should return false for 401 error",
+			err: &googleapi.Error{
+				Code: 401,
+			},
+			want: false,
+		},
+		{
+			name: "should return false for 404 error",
+			err: &googleapi.Error{
+				Code: 404,
+			},
+			want: false,
+		},
+		{
+			name: "should return false for nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "should return false for non-googleapi error",
+			err:  fmt.Errorf("some other error"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := isInsufficientScopeError(tt.err)
+			if got != tt.want {
+				t.Errorf("isInsufficientScopeError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleCalendarError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		err            error
+		context        string
+		wantNil        bool
+		wantErrContain string
+	}{
+		{
+			name:    "should return nil for nil error",
+			err:     nil,
+			context: "test",
+			wantNil: true,
+		},
+		{
+			name:           "should suggest login for 401",
+			err:            &googleapi.Error{Code: 401},
+			context:        "list events",
+			wantErrContain: "gsuite login",
+		},
+		{
+			name: "should mention calendar permission for 403 insufficient scope",
+			err: &googleapi.Error{
+				Code:   403,
+				Errors: []googleapi.ErrorItem{{Reason: "insufficientPermissions"}},
+			},
+			context:        "list events",
+			wantErrContain: "calendar permission",
+		},
+		{
+			name:           "should say not found for 404",
+			err:            &googleapi.Error{Code: 404},
+			context:        "get event",
+			wantErrContain: "not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := HandleCalendarError(tt.err, tt.context)
+
+			if tt.wantNil {
+				if got != nil {
+					t.Fatalf("expected nil, got %v", got)
+				}
+				return
+			}
+
+			if got == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(got.Error(), tt.wantErrContain) {
+				t.Errorf("error %q does not contain %q", got.Error(), tt.wantErrContain)
 			}
 		})
 	}

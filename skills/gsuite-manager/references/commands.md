@@ -336,6 +336,174 @@ gsuite send -t "user@example.com" -s "Update" -b "**Bold** and *italic*\n\n- Ite
 gsuite send -t "user@example.com" -s "Report" -b "See attached.\n\nThanks" --attach report.pdf --attach data.csv
 ```
 
+## Calendar
+
+### `gsuite calendar list`
+
+List upcoming calendar events. Defaults to events from now through 30 days.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--calendar-id` | | `primary` | Calendar ID |
+| `--max-results` | `-n` | `25` | Maximum number of events |
+| `--after` | | now | Show events after this time |
+| `--before` | | +30 days | Show events before this time |
+| `--query` | `-q` | | Search query |
+| `--single-events` | | `true` | Expand recurring events |
+| `--order-by` | | `startTime` | Order by: `startTime` or `updated` |
+| `--timezone` | | system | IANA timezone (e.g., `America/New_York`) |
+| `--show-deleted` | | `false` | Show deleted events |
+
+```bash
+gsuite calendar list
+gsuite calendar list --after today --before +7d
+gsuite calendar list -q "standup" -n 50 -f json
+```
+
+### `gsuite calendar get <event-id>`
+
+Get full event details including attendees, recurrence, and links.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--calendar-id` | `primary` | Calendar ID |
+| `--timezone` | system | IANA timezone |
+
+```bash
+gsuite calendar get abc123def456
+gsuite calendar get abc123def456 -f json
+```
+
+### `gsuite calendar create`
+
+Create a new calendar event.
+
+| Flag | Short | Required | Default | Description |
+|------|-------|----------|---------|-------------|
+| `--summary` | | Yes | | Event title |
+| `--start` | | Yes | | Start time (flexible format) |
+| `--end` | | No | | End time (mutually exclusive with `--duration`) |
+| `--duration` | `-d` | No | | Duration (e.g., `1h`, `30m`) |
+| `--all-day` | | No | `false` | Create all-day event |
+| `--description` | | No | | Event description |
+| `--location` | `-l` | No | | Event location |
+| `--attendees` | | No | | Comma-separated attendee emails |
+| `--rrule` | | No | | Recurrence rule (e.g., `FREQ=WEEKLY;BYDAY=MO`) |
+| `--send-updates` | | No | `none` | Notifications: `all`, `externalOnly`, `none` |
+| `--timezone` | | No | system | IANA timezone |
+| `--calendar-id` | | No | `primary` | Calendar ID |
+
+If neither `--end` nor `--duration` is provided, defaults to 1-hour duration.
+For `--all-day`, only the date portion of `--start` is used.
+
+```bash
+gsuite calendar create --summary "Meeting" --start "2026-03-15 09:00"
+gsuite calendar create --summary "Standup" --start "2026-03-15 09:00" --duration 30m
+gsuite calendar create --summary "Holiday" --start 2026-12-25 --all-day
+gsuite calendar create --summary "1:1" --start "2026-03-15 10:00" --duration 30m \
+  --rrule "FREQ=WEEKLY;BYDAY=MO" --attendees "alice@example.com" --send-updates all
+```
+
+### `gsuite calendar update <event-id>`
+
+Update an existing event. Only explicitly provided flags are changed.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--summary` | | | New event title |
+| `--start` | | | New start time |
+| `--end` | | | New end time |
+| `--description` | | | New description (empty string clears it) |
+| `--location` | `-l` | | New location (empty string clears it) |
+| `--add-attendees` | | | Comma-separated emails to add |
+| `--remove-attendees` | | | Comma-separated emails to remove |
+| `--send-updates` | | `none` | Notifications: `all`, `externalOnly`, `none` |
+| `--timezone` | | | IANA timezone |
+| `--calendar-id` | | `primary` | Calendar ID |
+| `--recurring-scope` | | `this` | Scope: `this` or `all` |
+
+```bash
+gsuite calendar update abc123 --summary "New Title"
+gsuite calendar update abc123 --start "2026-03-20 10:00" --end "2026-03-20 11:00"
+gsuite calendar update abc123 --add-attendees "carol@example.com" --send-updates all
+gsuite calendar update abc123 --recurring-scope all --summary "Updated Series"
+```
+
+### `gsuite calendar delete <event-id>`
+
+Delete a calendar event.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--send-updates` | `none` | Notifications: `all`, `externalOnly`, `none` |
+| `--recurring-scope` | `this` | Scope: `this` or `all` |
+| `--yes` | `false` | Required when `--recurring-scope all` |
+| `--calendar-id` | `primary` | Calendar ID |
+
+```bash
+gsuite calendar delete abc123
+gsuite calendar delete abc123 --recurring-scope all --yes
+```
+
+### `gsuite calendar respond <event-id>`
+
+Set your RSVP status for a calendar event.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `--status` | Yes | | `accepted`, `declined`, or `tentative` |
+| `--comment` | No | | RSVP comment |
+| `--send-updates` | No | `none` | Notifications: `all`, `externalOnly`, `none` |
+| `--calendar-id` | No | `primary` | Calendar ID |
+
+```bash
+gsuite calendar respond abc123 --status accepted
+gsuite calendar respond abc123 --status declined --comment "Out of office"
+```
+
+### `gsuite calendar today`
+
+Show today's events (shortcut for `calendar list` with today's date range).
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--calendar-id` | | `primary` | Calendar ID |
+| `--max-results` | `-n` | `25` | Maximum number of events |
+| `--timezone` | | system | IANA timezone |
+
+```bash
+gsuite calendar today
+gsuite calendar today -f json
+```
+
+### `gsuite calendar week`
+
+Show this week's events (Monday through Sunday).
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--calendar-id` | | `primary` | Calendar ID |
+| `--max-results` | `-n` | `25` | Maximum number of events |
+| `--timezone` | | system | IANA timezone |
+
+```bash
+gsuite calendar week
+gsuite calendar week -f json
+```
+
+### `gsuite calendar calendars`
+
+List available calendars.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--max-results` | `-n` | `100` | Maximum number of calendars |
+
+```bash
+gsuite calendar calendars
+gsuite calendar calendars -f json
+```
+
 ## Gmail Search Query Syntax
 
 The `search` command and `messages list -q` / `threads list -q` all accept Gmail
