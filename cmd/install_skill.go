@@ -13,23 +13,43 @@ import (
 // SkillFS holds the embedded skill files, set by main.go before Execute().
 var SkillFS embed.FS
 
+// clientSkillDirs maps client names to their skills directory prefix.
+var clientSkillDirs = map[string]string{
+	"claude":              filepath.Join(".claude", "skills"),
+	"openclaw-workspace":  "skills",
+}
+
 var installSkillCmd = &cobra.Command{
 	Use:   "install-skill",
 	Short: "Install the Claude Code skill for Gmail management",
-	Long: `Writes the bundled gsuite-manager skill files into .claude/skills/gsuite-manager/
-in the current working directory. Existing files are overwritten.`,
+	Long: `Writes the bundled gsuite-manager skill files into the appropriate skills directory.
+
+By default, installs to .claude/skills/gsuite-manager/ (Claude Code).
+Use --client to target a different client:
+  --client openclaw-workspace  → skills/gsuite-manager/
+
+Existing files are overwritten.`,
 	RunE: runInstallSkill,
 }
 
 func init() {
+	installSkillCmd.Flags().String("client", "claude", "target client (claude, openclaw-workspace)")
 	rootCmd.AddCommand(installSkillCmd)
 }
 
 func runInstallSkill(cmd *cobra.Command, args []string) error {
-	const embeddedRoot = "skills/gsuite-manager"
-	targetDir := filepath.Join(".claude", "skills", "gsuite-manager")
+	client, _ := cmd.Flags().GetString("client")
+	skillsDir, ok := clientSkillDirs[client]
+	if !ok {
+		return fmt.Errorf("unknown client %q (supported: claude, openclaw-workspace)", client)
+	}
+	targetDir := filepath.Join(skillsDir, "gsuite-manager")
 
-	sub, err := fs.Sub(SkillFS, embeddedRoot)
+	return installSkillFiles(SkillFS, "skills/gsuite-manager", targetDir)
+}
+
+func installSkillFiles(source fs.FS, embeddedRoot, targetDir string) error {
+	sub, err := fs.Sub(source, embeddedRoot)
 	if err != nil {
 		return fmt.Errorf("reading embedded skill files: %w", err)
 	}
