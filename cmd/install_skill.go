@@ -38,8 +38,6 @@ func init() {
 }
 
 func runInstallSkill(cmd *cobra.Command, args []string) error {
-	const embeddedRoot = "skills/gsuite-manager"
-
 	client, _ := cmd.Flags().GetString("client")
 	skillsDir, ok := clientSkillDirs[client]
 	if !ok {
@@ -47,7 +45,11 @@ func runInstallSkill(cmd *cobra.Command, args []string) error {
 	}
 	targetDir := filepath.Join(skillsDir, "gsuite-manager")
 
-	sub, err := fs.Sub(SkillFS, embeddedRoot)
+	return installSkillFiles(SkillFS, "skills/gsuite-manager", targetDir)
+}
+
+func installSkillFiles(source fs.FS, embeddedRoot, targetDir string) error {
+	sub, err := fs.Sub(source, embeddedRoot)
 	if err != nil {
 		return fmt.Errorf("reading embedded skill files: %w", err)
 	}
